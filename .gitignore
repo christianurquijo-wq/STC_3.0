@@ -1,0 +1,7 @@
+.env
+__pycache__/
+*.pyc
+.streamlit/secrets.toml
+*.csv
+columnas_debug.txt
+debug_entregas.txt
