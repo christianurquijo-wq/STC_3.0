@@ -3,12 +3,15 @@ import os
 import time
 import httplib2
 import plotly.express as px
+import streamlit as st
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
 load_dotenv()
-_API_KEY = os.getenv("GOOGLE_API_KEY")
-_service = None
+try:
+    _API_KEY = st.secrets["GOOGLE_API_KEY"] 
+except Exception:
+    _API_KEY = os.getenv("GOOGLE_API_KEY")
 
 def _get_service():
     global _service
