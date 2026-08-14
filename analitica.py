@@ -236,7 +236,9 @@ def tabla_estados(general: pd.DataFrame, enc_basico: pd.DataFrame, enc_esp: pd.D
     filas = [
         {
             "Etapa": "Verificación (Matriculados)",
-            "Básico": None, "Especializado": None, "Total": matriculados.sum(),
+            "Básico": (matriculados & (paquete == "BÁSICO")).sum(),
+            "Especializado": (matriculados & (paquete == "ESPECIALIZADO")).sum(),
+            "Total": matriculados.sum(),
         },
         {
             "Etapa": "Orientación",
