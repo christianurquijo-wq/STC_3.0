@@ -25,8 +25,8 @@ with col_titulo:
         unsafe_allow_html=True,
     )
 
-tab1, tab2, tab3, tab4 = st.tabs([
-    "🔍 Consulta por CC", "📄 Compilador FCS", "⏰ Alertas por tiempos", "📊 Dashboard General",
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    "🔍 Consulta por CC", "📄 Compilador FCS", "⏰ Alertas por tiempos", "📊 Overview", "🌐 Dashboard Proyecto",
 ])
 
 # =========================================================
@@ -221,7 +221,7 @@ with tab3:
         st.info("Haz clic en una barra para ver qué cédulas tienen ese campo vacío.")
 
 # =========================================================
-# TAB 4: Dashboard
+# TAB 4: Overview
 # =========================================================
 with tab4:
     from analitica import cargar_todo, cargar_metas, resumen_looker, tabla_estados, serie_temporal
@@ -347,3 +347,17 @@ with tab4:
         fig_f.update_traces(line_color="#292929", textposition="top center")
         fig_f.update_layout(height=350)
         st.plotly_chart(fig_f, width='stretch')
+
+# =========================================================
+# TAB 5: Dashboard
+# =========================================================
+
+with tab5:
+    import streamlit.components.v1 as components
+
+    st.subheader("Dashboard Proyecto")
+    components.iframe(
+        "https://datastudio.google.com/embed/reporting/a656828b-105a-43c4-88cc-99bde8b3ea07/page/p_nzkle3pm5d",
+        height=800,
+        scrolling=True,
+    )
