@@ -130,7 +130,7 @@ with tab1:
         from analitica import calcular_progreso_ruta, html_diagrama_ruta, cargar_todo_cache
 
         with carga_personalizada("Calculando progreso de la ruta..."):
-            f_ruta = cargar_todo()
+            f_ruta = cargar_todo_cache()
             cedula_encontrada = df_filtrado.iloc[0]["cedula_norm"]
             progreso = calcular_progreso_ruta(
                 cedula_encontrada, f_ruta["general"], f_ruta["remisiones"],
