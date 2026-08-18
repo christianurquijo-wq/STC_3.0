@@ -26,25 +26,35 @@ with col_titulo:
     )
 with col_menu:
     st.markdown("<div style='margin-top:35px;'></div>", unsafe_allow_html=True)
-    with st.popover("☰ Acciones", use_container_width=True):
-        st.markdown("**Webhooks**")
-        from webhooks import disparar_webhook
+    st.markdown("**Webhooks**")
+        
+    if "confirmar_remisiones" not in st.session_state:
+        st.session_state.confirmar_remisiones = False
+        
+    if not st.session_state.confirmar_remisiones:
         if st.button("📤 Enviar remisiones (n8n)", key="btn_webhook_remisiones"):
-            with st.spinner("Disparando flujo de remisiones..."):
-                exito, mensaje = disparar_webhook(
-                    url_env="WEBHOOK_REMISIONES_URL",
-                    header_nombre_env="WEBHOOK_REMISIONES_HEADER_NOMBRE",
-                    header_valor_env="WEBHOOK_REMISIONES_HEADER_VALOR",
-                )
-            if exito:
-                st.success(mensaje)
-            else:
-                st.error(mensaje)
-
-        st.divider()
-        st.markdown("**Reporte por correo**")
-        st.caption("El reporte usa los datos actuales del Overview.")
-        st.info("Ve al tab Overview para enviar el reporte con el detalle completo.")
+            st.session_state.confirmar_remisiones = True
+            st.rerun()
+    else:
+        st.warning("¿Confirmas disparar el flujo de remisiones? Esta acción activa el proceso real en n8n.")
+        col_si, col_no = st.columns(2)
+        with col_si:
+            if st.button("✅ Sí, enviar", key="btn_confirmar_remisiones"):
+                with st.spinner("Disparando flujo de remisiones..."):
+                    exito, mensaje = disparar_webhook(
+                        url_env="WEBHOOK_REMISIONES_URL",
+                        header_nombre_env="WEBHOOK_REMISIONES_HEADER_NOMBRE",
+                        header_valor_env="WEBHOOK_REMISIONES_HEADER_VALOR",
+                    )
+                st.session_state.confirmar_remisiones = False
+                if exito:
+                    st.success(mensaje)
+                else:
+                    st.error(mensaje)
+        with col_no:
+            if st.button("❌ Cancelar", key="btn_cancelar_remisiones"):
+                st.session_state.confirmar_remisiones = False
+                st.rerun()
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "🔍 Consulta por CC", "📄 Compilador FCS", "⏰ Alertas por tiempos", "📊 Overview", "🌐 Dashboard Proyecto",
