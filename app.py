@@ -132,8 +132,9 @@ with tab1:
         with carga_personalizada("Calculando progreso de la ruta..."):
             f_ruta = cargar_todo_cache()
             cedula_encontrada = df_filtrado.iloc[0]["cedula_norm"]
+            general_normalizado = normalizar_columna_cedula(f_ruta["general"], MAPEO_CEDULA["general"])
             progreso = calcular_progreso_ruta(
-                cedula_encontrada, f_ruta["general"], f_ruta["remisiones"],
+                cedula_encontrada, general_normalizado, f_ruta["remisiones"],
                 f_ruta["orientacion_consolidado"], f_ruta["encuesta_basico_jco"], f_ruta["encuesta_especializado"],
             )
 
