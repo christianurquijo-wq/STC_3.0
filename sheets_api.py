@@ -13,10 +13,12 @@ try:
 except Exception:
     _API_KEY = os.getenv("GOOGLE_API_KEY")
 
+_service = None
+
 def _get_service():
     global _service
     if _service is None:
-        http = httplib2.Http(timeout=30)  # evita que se cuelgue indefinidamente
+        http = httplib2.Http(timeout=60)  # evita que se cuelgue indefinidamente
         _service = build("sheets", "v4", developerKey=_API_KEY, http=http)
     return _service
 
