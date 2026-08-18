@@ -290,6 +290,31 @@ with tab4:
         with c1: tarjeta(r["cantidad_entregados"], "Cantidad entregados", "#656A71")
         with c2: tarjeta(f"{r['avance_entregas']}%", "Avance sobre meta total (5102)", "#FD531E", progreso=r['avance_entregas'])
 
+        st.divider()
+        st.markdown("### 📧 Enviar reporte por correo")
+
+        from reportes import enviar_reporte
+
+        destinatarios_texto = st.text_input(
+            "Correos destinatarios (separados por coma)",
+            placeholder="persona1@kuepa.com, persona2@kuepa.com",
+        )
+
+        if st.button("Enviar reporte ahora"):
+            destinatarios = [d.strip() for d in destinatarios_texto.split(",") if d.strip()]
+            if not destinatarios:
+                st.warning("Escribe al menos un correo destinatario.")
+            else:
+                tabla_para_reporte = tabla_estados(
+                    f["general"], f["encuesta_basico_jco"], f["encuesta_especializado"],
+                    excluir_entregados=excluir_entregados, por_paquete=True,
+                )
+                exito, mensaje = enviar_reporte(destinatarios, r, tabla_para_reporte)
+                if exito:
+                    st.success(mensaje)
+                else:
+                    st.error(mensaje)
+
     # ============================================================
     # SECCIÓN 2: Tabla de estados + gráfica de Momento del proceso
     # ============================================================
