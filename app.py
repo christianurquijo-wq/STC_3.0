@@ -309,7 +309,22 @@ with tab4:
                     f["general"], f["encuesta_basico_jco"], f["encuesta_especializado"],
                     excluir_entregados=excluir_entregados, por_paquete=True,
                 )
-                exito, mensaje = enviar_reporte(destinatarios, r, tabla_para_reporte)
+
+                df_momento_reporte = f["general"].copy()
+                if excluir_entregados and CAMPO_ENTREGADO in df_momento_reporte.columns:
+                    from analitica import es_entregado
+                    df_momento_reporte = df_momento_reporte[~es_entregado(df_momento_reporte[CAMPO_ENTREGADO])]
+                conteo_momento_reporte = df_momento_reporte["Momento del proceso (Back UP)"].value_counts().reset_index()
+                conteo_momento_reporte.columns = ["Etapa", "Cantidad"]
+                conteo_momento_reporte = conteo_momento_reporte.sort_values("Etapa")
+
+                series_reporte = {
+                    "verificacion": serie_temporal(f["general"], "Fecha", "Semanal"),
+                    "orientacion": serie_temporal(f["general"], "Fecha Orientación", "Semanal"),
+                    "formacion": serie_temporal(f["general"], "Fecha clases", "Semanal"),
+                }
+
+                exito, mensaje = enviar_reporte(destinatarios, r, tabla_para_reporte, conteo_momento_reporte, series_reporte)
                 if exito:
                     st.success(mensaje)
                 else:
