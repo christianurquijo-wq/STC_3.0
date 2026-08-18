@@ -408,7 +408,7 @@ with tab4:
                 series_reporte = {
                     "verificacion": serie_temporal(f["general"], "Fecha", "Semanal"),
                     "orientacion": serie_temporal(f["general"], "Fecha Orientación", "Semanal"),
-                    "formacion": serie_temporal(f["general"], "Fecha clases", "Semanal"),
+                    "formacion": serie_temporal(f["general"], "Fecha finalización", "Semanal"),
                 }
 
                 exito, mensaje = enviar_reporte(destinatarios, r, tabla_para_reporte, conteo_momento_reporte, series_reporte)
@@ -469,7 +469,7 @@ with tab4:
         st.markdown("#### Formación")
         ver_semanal_form = st.toggle("📅 Gráfica por semanas", value=False, key="toggle_form")
         granularidad_form = "Semanal" if ver_semanal_form else "Diaria"
-        serie_formacion = serie_temporal(f["general"], "Fecha clases", granularidad_form)
+        serie_formacion = serie_temporal(f["general"], "Fecha finalización", granularidad_form)
         fig_f = px.line(serie_formacion, x="Fecha", y="Cantidad", markers=True, text="Cantidad")
         fig_f.update_traces(line_color="#292929", textposition="top center")
         fig_f.update_layout(height=350)
