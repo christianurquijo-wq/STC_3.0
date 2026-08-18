@@ -1,5 +1,6 @@
 # analitica.py
 import pandas as pd
+import streamlit as st
 from cargar_datos import cargar_fuente
 from normalizador import normalizar_cedula
 from column_mapping import CAMPO_ESTADO_FCS
