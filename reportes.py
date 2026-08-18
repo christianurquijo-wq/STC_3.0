@@ -134,3 +134,38 @@ def enviar_reporte(destinatarios: list, r: dict, tabla_estados_df: pd.DataFrame,
         return True, f"Reporte enviado a {len(destinatarios)} destinatario(s)."
     except Exception as e:
         return False, f"Error al enviar: {e}"
+
+def enviar_tabla_generica(destinatarios: list, titulo: str, tabla: pd.DataFrame) -> tuple:
+    usuario, clave = _credenciales_gmail()
+    if not usuario or not clave:
+        return False, "Faltan las credenciales de Gmail."
+
+    from email.mime.application import MIMEApplication
+    msg = MIMEMultipart()
+    msg["From"] = usuario
+    msg["To"] = ", ".join(destinatarios)
+    msg["Subject"] = titulo
+
+    cuerpo = f'''
+        <html><body style="font-family: Arial, sans-serif; color:#292929;">
+            <h3 style="color:#FD531E;">{titulo}</h3>
+            <p style="color:#656A71;">Se adjunta el detalle en formato CSV — {len(tabla)} registros.</p>
+        </body></html>
+    '''
+    msg.attach(MIMEText(cuerpo, "html"))
+
+    import io
+    buffer = io.StringIO()
+    tabla.to_csv(buffer, index=False, encoding="utf-8-sig")
+    adjunto = MIMEApplication(buffer.getvalue().encode("utf-8-sig"), Name="detalle.csv")
+    adjunto["Content-Disposition"] = 'attachment; filename="detalle.csv"'
+    msg.attach(adjunto)
+
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(usuario, clave)
+            server.sendmail(usuario, destinatarios, msg.as_string())
+        return True, f"Tabla enviada a {len(destinatarios)} destinatario(s)."
+    except Exception as e:
+        return False, f"Error al enviar: {e}"

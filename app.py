@@ -83,18 +83,10 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 # TAB 1: Consulta por CC
 # =========================================================
 with tab1:
-    try:
-        with carga_personalizada("Cargando información general..."):
-            df = cargar_general()
-    except Exception as e:
-        st.error("No se pudo conectar con Google Sheets (posible bache de red). Intenta de nuevo.")
-        # st.exception(e)  # TEMPORAL — para diagnosticar, borrar después
-        if st.button("🔄 Reintentar"):
-            st.cache_data.clear()
-            st.rerun()
-        st.stop()
+    with carga_personalizada("Cargando información general..."):
+        df = cargar_general()
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
         paquetes = ["Todos"] + sorted(df["Paquete"].dropna().unique().tolist())
         filtro_paquete = st.selectbox("Paquete", paquetes)
@@ -102,6 +94,12 @@ with tab1:
         estados = ["Todos"] + sorted(df["Momento del proceso"].dropna().unique().tolist())
         filtro_estado = st.selectbox("Estado / Etapa", estados)
     with col3:
+        eventos = ["Todos"] + sorted(df["Evento/Base"].dropna().unique().tolist())
+        filtro_evento = st.selectbox("Evento/Base", eventos)
+    with col4:
+        hitos = ["Todos"] + sorted(df["Hito"].dropna().unique().tolist())
+        filtro_hito = st.selectbox("Hito", hitos)
+    with col5:
         filtro_cc = st.text_input("Buscar por CC (parcial o completo)")
 
     df_filtrado = df.copy()
@@ -109,6 +107,10 @@ with tab1:
         df_filtrado = df_filtrado[df_filtrado["Paquete"] == filtro_paquete]
     if filtro_estado != "Todos":
         df_filtrado = df_filtrado[df_filtrado["Momento del proceso"] == filtro_estado]
+    if filtro_evento != "Todos":
+        df_filtrado = df_filtrado[df_filtrado["Evento/Base"] == filtro_evento]
+    if filtro_hito != "Todos":
+        df_filtrado = df_filtrado[df_filtrado["Hito"] == filtro_hito]
     if filtro_cc:
         df_filtrado = df_filtrado[df_filtrado["cedula_norm"].str.contains(filtro_cc, na=False)]
 
@@ -118,10 +120,51 @@ with tab1:
         "CC Prospecto", "Nombre completo", "ID CRM", "ID SIS",
         "Paquete", "JCO", "¿Es JCO?", "Resultado del VRD",
         "Momento del proceso", "Estado CRM", "Reporte",
-        "Estado de la formación",
+        "Estado de la formación", "Evento/Base", "Hito",
     ]
     columnas_mostrar = [c for c in columnas_mostrar if c in df_filtrado.columns]
     st.dataframe(df_filtrado[columnas_mostrar], width='stretch')
+
+    # --- Diagrama de ruta si la búsqueda de CC da un resultado único ---
+    if filtro_cc and len(df_filtrado) == 1:
+        from analitica import calcular_progreso_ruta, html_diagrama_ruta, cargar_todo
+
+        with carga_personalizada("Calculando progreso de la ruta..."):
+            f_ruta = cargar_todo()
+            cedula_encontrada = df_filtrado.iloc[0]["cedula_norm"]
+            progreso = calcular_progreso_ruta(
+                cedula_encontrada, f_ruta["general"], f_ruta["remisiones"],
+                f_ruta["orientacion_consolidado"], f_ruta["encuesta_basico_jco"], f_ruta["encuesta_especializado"],
+            )
+
+        st.markdown("#### Progreso de ruta")
+        st.markdown(html_diagrama_ruta(progreso), unsafe_allow_html=True)
+
+    # --- Descarga y envío por correo de la tabla filtrada ---
+    st.divider()
+    col_desc, col_correo = st.columns(2)
+
+    with col_desc:
+        csv_filtrado = df_filtrado[columnas_mostrar].to_csv(index=False, encoding="utf-8-sig")
+        st.download_button("⬇️ Descargar tabla filtrada (CSV)", csv_filtrado, "consulta_cc.csv", "text/csv")
+
+    with col_correo:
+        with st.popover("📧 Enviar esta tabla por correo"):
+            destinatarios_tabla = st.text_input("Correos (separados por coma)", key="correo_tabla_cc")
+            if st.button("Enviar", key="btn_enviar_tabla_cc"):
+                destinatarios = [d.strip() for d in destinatarios_tabla.split(",") if d.strip()]
+                if not destinatarios:
+                    st.warning("Escribe al menos un correo.")
+                else:
+                    from reportes import enviar_tabla_generica
+                    with carga_personalizada("Enviando tabla por correo..."):
+                        exito, mensaje = enviar_tabla_generica(
+                            destinatarios, "Consulta por CC — Tabla filtrada", df_filtrado[columnas_mostrar]
+                        )
+                    if exito:
+                        st.success(mensaje)
+                    else:
+                        st.error(mensaje)
 
 # =========================================================
 # TAB 2: Compilador FCS (siguiente paso)
