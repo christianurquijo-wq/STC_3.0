@@ -44,6 +44,13 @@ WEBHOOKS_REGISTRADOS = [
         "confirmar": True,
         "mensaje_confirmacion": "¿Confirmas disparar el flujo de remisiones? Esta acción activa el proceso real en n8n.",
     },
-    # Para agregar un webhook nuevo, copia este bloque completo y cambia los valores.
-    # Si no necesita confirmación, pon "confirmar": False.
+    {
+        "id": "reporte_crm",
+        "etiqueta": "📊 Actualizar Reporte CRM (n8n)",
+        "url_env": "WEBHOOK_REPORTE_CRM_URL",
+        "header_nombre_env": "WEBHOOK_REMISIONES_HEADER_NOMBRE",
+        "header_valor_env": "WEBHOOK_REMISIONES_HEADER_VALOR",
+        "confirmar": True,
+        "mensaje_confirmacion": "¿Confirmas disparar el flujo de Reporte CRM?",
+    },
 ]
