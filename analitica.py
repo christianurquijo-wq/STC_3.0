@@ -277,3 +277,23 @@ def serie_temporal(general: pd.DataFrame, columna_fecha: str, granularidad: str 
         df["Fecha"] = df["Fecha"].apply(lambda d: f"Semana del {d.strftime('%d/%m/%Y')}")
 
     return df
+
+from contextlib import contextmanager
+
+@contextmanager
+def carga_personalizada(mensaje="Cargando..."):
+    placeholder = st.empty()
+    placeholder.markdown(f'''
+        <div style="display:flex; align-items:center; gap:12px; padding:20px 0;">
+            <div style="width:28px; height:28px; border:3px solid #EAEAEA; border-top:3px solid #FD531E;
+                        border-radius:50%; animation: girar 0.8s linear infinite;"></div>
+            <span style="color:#656A71; font-size:14px;">{mensaje}</span>
+        </div>
+        <style>
+        @keyframes girar {{ 0% {{transform: rotate(0deg);}} 100% {{transform: rotate(360deg);}} }}
+        </style>
+    ''', unsafe_allow_html=True)
+    try:
+        yield
+    finally:
+        placeholder.empty()

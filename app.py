@@ -2,6 +2,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from analitica import carga_personalizada
 from cargar_datos import cargar_fuente
 from normalizador import normalizar_columna_cedula
 from column_mapping import CAMPO_ENTREGADO, MAPEO_CEDULA
@@ -24,37 +25,55 @@ with col_titulo:
         "<h1 style='color:#292929; margin-top:10px;'>Control de Calidad STC 3.0</h1>",
         unsafe_allow_html=True,
     )
+
 with col_menu:
     st.markdown("<div style='margin-top:35px;'></div>", unsafe_allow_html=True)
-    st.markdown("**Webhooks**")
-        
-    if "confirmar_remisiones" not in st.session_state:
-        st.session_state.confirmar_remisiones = False
-        
-    if not st.session_state.confirmar_remisiones:
-        if st.button("📤 Enviar remisiones (n8n)", key="btn_webhook_remisiones"):
-            st.session_state.confirmar_remisiones = True
-            st.rerun()
-    else:
-        st.warning("¿Confirmas disparar el flujo de remisiones? Esta acción activa el proceso real en n8n.")
-        col_si, col_no = st.columns(2)
-        with col_si:
-            if st.button("✅ Sí, enviar", key="btn_confirmar_remisiones"):
-                with st.spinner("Disparando flujo de remisiones..."):
-                    exito, mensaje = disparar_webhook(
-                        url_env="WEBHOOK_REMISIONES_URL",
-                        header_nombre_env="WEBHOOK_REMISIONES_HEADER_NOMBRE",
-                        header_valor_env="WEBHOOK_REMISIONES_HEADER_VALOR",
-                    )
-                st.session_state.confirmar_remisiones = False
-                if exito:
-                    st.success(mensaje)
-                else:
-                    st.error(mensaje)
-        with col_no:
-            if st.button("❌ Cancelar", key="btn_cancelar_remisiones"):
-                st.session_state.confirmar_remisiones = False
-                st.rerun()
+    with st.popover("Acciones", use_container_width=True):
+        st.markdown("**Webhooks**")
+
+        from webhooks import disparar_webhook, WEBHOOKS_REGISTRADOS
+
+        for wh in WEBHOOKS_REGISTRADOS:
+            key_confirmar = f"confirmar_{wh['id']}"
+            if key_confirmar not in st.session_state:
+                st.session_state[key_confirmar] = False
+
+            if not st.session_state[key_confirmar]:
+                if st.button(wh["etiqueta"], key=f"btn_{wh['id']}"):
+                    if wh.get("confirmar"):
+                        st.session_state[key_confirmar] = True
+                        st.rerun()
+                    else:
+                        with st.spinner(f"Ejecutando {wh['etiqueta']}..."):
+                            exito, mensaje = disparar_webhook(
+                                wh["url_env"], wh["header_nombre_env"], wh["header_valor_env"]
+                            )
+                        if exito:
+                            st.success(mensaje)
+                        else:
+                            st.error(mensaje)
+            else:
+                st.warning(wh.get("mensaje_confirmacion", "¿Confirmas ejecutar esta acción?"))
+                c1, c2 = st.columns(2)
+                with c1:
+                    if st.button("✅ Sí", key=f"si_{wh['id']}"):
+                        with st.spinner(f"Ejecutando {wh['etiqueta']}..."):
+                            exito, mensaje = disparar_webhook(
+                                wh["url_env"], wh["header_nombre_env"], wh["header_valor_env"]
+                            )
+                        st.session_state[key_confirmar] = False
+                        if exito:
+                            st.success(mensaje)
+                        else:
+                            st.error(mensaje)
+                with c2:
+                    if st.button("❌ No", key=f"no_{wh['id']}"):
+                        st.session_state[key_confirmar] = False
+                        st.rerun()
+            st.divider()
+
+        st.markdown("**Reporte por correo**")
+        st.caption("Ve al tab Overview para enviar el reporte con el detalle completo.")
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "🔍 Consulta por CC", "📄 Compilador FCS", "⏰ Alertas por tiempos", "📊 Overview", "🌐 Dashboard Proyecto",
@@ -65,7 +84,7 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 # =========================================================
 with tab1:
     try:
-        with st.spinner("Cargando información general..."):
+        with carga_personalizada("Cargando información general..."):
             df = cargar_general()
     except Exception as e:
         st.error("No se pudo conectar con Google Sheets (posible bache de red). Intenta de nuevo.")
@@ -264,7 +283,7 @@ with tab4:
         metas = cargar_metas()
         return f, metas
 
-    with st.spinner("Cargando datos del overview..."):
+    with carga_personalizada("Cargando datos del overview..."):
         f, metas = cargar_dashboard()
 
     def tarjeta(valor, etiqueta, color="#656A71", progreso=None):

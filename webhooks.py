@@ -33,3 +33,17 @@ def disparar_webhook(url_env: str, header_nombre_env: str = None, header_valor_e
         return False, f"El webhook respondió con código {resp.status_code}."
     except Exception as e:
         return False, f"Error al conectar con el webhook: {e}"
+
+WEBHOOKS_REGISTRADOS = [
+    {
+        "id": "remisiones",
+        "etiqueta": "📤 Enviar remisiones (n8n)",
+        "url_env": "WEBHOOK_REMISIONES_URL",
+        "header_nombre_env": "WEBHOOK_REMISIONES_HEADER_NOMBRE",
+        "header_valor_env": "WEBHOOK_REMISIONES_HEADER_VALOR",
+        "confirmar": True,
+        "mensaje_confirmacion": "¿Confirmas disparar el flujo de remisiones? Esta acción activa el proceso real en n8n.",
+    },
+    # Para agregar un webhook nuevo, copia este bloque completo y cambia los valores.
+    # Si no necesita confirmación, pon "confirmar": False.
+]
