@@ -4,6 +4,7 @@ import streamlit as st
 from cargar_datos import cargar_fuente
 from normalizador import normalizar_cedula
 from column_mapping import CAMPO_ESTADO_FCS
+from normalizador_texto import normalizar_texto
 
 # Columnas del FCS a excluir de la auditoría de vacíos (G y H = fechas de
 # inscripción en plataformas que legítimamente quedan vacías para muchos casos)
@@ -20,6 +21,10 @@ def cargar_todo():
         df, _ = cargar_fuente(nombre)
         fuentes[nombre] = df
     return fuentes
+
+@st.cache_data(ttl=600)
+def cargar_todo_cache():
+    return cargar_todo()
 
 # --- Caso 1: Leads sin gestión ---
 def leads_sin_gestion(general: pd.DataFrame) -> pd.DataFrame:

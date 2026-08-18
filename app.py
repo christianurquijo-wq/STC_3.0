@@ -127,7 +127,7 @@ with tab1:
 
     # --- Diagrama de ruta si la búsqueda de CC da un resultado único ---
     if filtro_cc and len(df_filtrado) == 1:
-        from analitica import calcular_progreso_ruta, html_diagrama_ruta, cargar_todo
+        from analitica import calcular_progreso_ruta, html_diagrama_ruta, cargar_todo_cache
 
         with carga_personalizada("Calculando progreso de la ruta..."):
             f_ruta = cargar_todo()
