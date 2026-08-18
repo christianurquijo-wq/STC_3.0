@@ -34,10 +34,11 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 # =========================================================
 with tab1:
     try:
-        df = cargar_general()
+        with st.spinner("Cargando información general..."):
+            df = cargar_general()
     except Exception as e:
         st.error("No se pudo conectar con Google Sheets (posible bache de red). Intenta de nuevo.")
-        st.exception(e)  # TEMPORAL — para diagnosticar, borrar después
+        # st.exception(e)  # TEMPORAL — para diagnosticar, borrar después
         if st.button("🔄 Reintentar"):
             st.cache_data.clear()
             st.rerun()
@@ -232,7 +233,8 @@ with tab4:
         metas = cargar_metas()
         return f, metas
 
-    f, metas = cargar_dashboard()
+    with st.spinner("Cargando datos del overview..."):
+        f, metas = cargar_dashboard()
 
     def tarjeta(valor, etiqueta, color="#656A71", progreso=None):
         barra_html = ""
