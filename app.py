@@ -70,7 +70,7 @@ with col_menu:
                     if st.button("❌ No", key=f"no_{wh['id']}"):
                         st.session_state[key_confirmar] = False
                         st.rerun()
-            st.divider()
+            st.markdown("<hr style='margin:6px 0; border-color:#EAEAEA;'>", unsafe_allow_html=True)
 
         st.markdown("**Reporte por correo**")
         st.caption("Ve al tab Overview para enviar el reporte con el detalle completo.")
