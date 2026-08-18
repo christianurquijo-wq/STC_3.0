@@ -235,16 +235,12 @@ with tab2:
 # TAB 3: Análisis de datos
 # =========================================================
 with tab3:
-    from analitica import cargar_todo, generar_resumen, campos_vacios_fcs
+    from analitica import cargar_todo_cache, generar_resumen, campos_vacios_fcs
 
-    @st.cache_data(ttl=600)
-    def cargar_analitica():
-        f = cargar_todo()
-        resumen = generar_resumen(f)
-        vacios = campos_vacios_fcs(f["orientacion_consolidado"])
-        return resumen, vacios
-
-    resumen, vacios = cargar_analitica()
+    with carga_personalizada("Cargando análisis de datos..."):
+        f_tab3 = cargar_todo_cache()
+        resumen = generar_resumen(f_tab3)
+        vacios = campos_vacios_fcs(f_tab3["orientacion_consolidado"])
 
     st.subheader("Resumen de inconsistencias por caso")
 
@@ -318,16 +314,11 @@ with tab3:
 # TAB 4: Overview
 # =========================================================
 with tab4:
-    from analitica import cargar_todo, cargar_metas, resumen_looker, tabla_estados, serie_temporal
-
-    @st.cache_data(ttl=600)
-    def cargar_dashboard():
-        f = cargar_todo()
-        metas = cargar_metas()
-        return f, metas
+    from analitica import cargar_todo_cache, cargar_metas, resumen_looker, tabla_estados, serie_temporal
 
     with carga_personalizada("Cargando datos del overview..."):
-        f, metas = cargar_dashboard()
+        f = cargar_todo_cache()
+        metas = cargar_metas()
 
     def tarjeta(valor, etiqueta, color="#656A71", progreso=None):
         barra_html = ""
