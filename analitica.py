@@ -304,7 +304,7 @@ def carga_personalizada(mensaje="Cargando..."):
     finally:
         placeholder.empty()
 
-def calcular_progreso_ruta(cedula_norm: str, general: pd.DataFrame, remisiones: pd.DataFrame,
+def calcular_progreso_ruta(cedula_norm: str, general: pd.DataFrame,
                             orientacion: pd.DataFrame, enc_basico: pd.DataFrame, enc_esp: pd.DataFrame) -> dict:
     persona = general[general["cedula_norm"] == cedula_norm]
     if persona.empty:
@@ -335,9 +335,8 @@ def calcular_progreso_ruta(cedula_norm: str, general: pd.DataFrame, remisiones: 
     if "Formación" in etapas:
         completado["Formación"] = str(persona.get("Estado de la formación", "")).strip() == "FINALIZADO"
 
-    ced_remision = remisiones[remisiones["NÚMERO DE DOCUMENTO"].apply(normalizar_cedula) == cedula_norm]
-    completado["Remisión"] = (ced_remision["REPORTE"].astype(str).str.strip() == "FINALIZADO").any()
-
+    completado["Remisión"] = normalizar_texto(persona.get("Remitido")) == "SI"
+    
     if "Mitigación" in etapas:
         completado["Mitigación"] = str(persona.get("Bono enviado", "")).strip().upper() == "SI"
 
