@@ -349,30 +349,36 @@ def calcular_progreso_ruta(cedula_norm: str, general: pd.DataFrame, remisiones: 
 
 def html_diagrama_ruta(progreso: dict) -> str:
     if not progreso or not progreso["etapas"]:
-        return f'<p style="color:#656A71;">{progreso["ruta"] if progreso else "Cédula no encontrada en General"}</p>'
+        mensaje = progreso["ruta"] if progreso else "Cédula no encontrada en General"
+        return f'<p style="color:#656A71;">{mensaje}</p>'
 
-    pasos_html = ""
     total = len(progreso["etapas"])
+    pasos_html = ""
     for i, etapa in enumerate(progreso["etapas"]):
         hecho = progreso["completado"].get(etapa, False)
         color = "#FD531E" if hecho else "#D9D9D9"
         texto_color = "#FFFFFF" if hecho else "#656A71"
         icono = "✓" if hecho else str(i + 1)
-        linea = "" if i == total - 1 else f'<div style="flex:1; height:3px; background-color:{"#FD531E" if hecho else "#D9D9D9"}; margin-top:19px;"></div>'
-        pasos_html += f'''
-            <div style="display:flex; flex-direction:column; align-items:center; min-width:90px;">
-                <div style="width:38px; height:38px; border-radius:50%; background-color:{color};
-                            display:flex; align-items:center; justify-content:center; font-weight:bold; color:{texto_color};">
-                    {icono}
-                </div>
-                <div style="font-size:12px; color:#292929; margin-top:6px; text-align:center;">{etapa}</div>
-            </div>
-            {linea}
-        '''
 
-    return f'''
-        <div style="margin:16px 0;">
-            <div style="font-size:13px; color:#656A71; margin-bottom:12px;">Ruta: <b style="color:#292929;">{progreso["ruta"]}</b></div>
-            <div style="display:flex; align-items:flex-start;">{pasos_html}</div>
-        </div>
-    '''
+        paso = (
+            f'<div style="display:flex; flex-direction:column; align-items:center; min-width:90px;">'
+            f'<div style="width:38px; height:38px; border-radius:50%; background-color:{color}; '
+            f'display:flex; align-items:center; justify-content:center; font-weight:bold; color:{texto_color};">'
+            f'{icono}</div>'
+            f'<div style="font-size:12px; color:#292929; margin-top:6px; text-align:center;">{etapa}</div>'
+            f'</div>'
+        )
+
+        if i < total - 1:
+            color_linea = "#FD531E" if hecho else "#D9D9D9"
+            paso += f'<div style="flex:1; height:3px; background-color:{color_linea}; margin-top:19px;"></div>'
+
+        pasos_html += paso
+
+    return (
+        f'<div style="margin:16px 0;">'
+        f'<div style="font-size:13px; color:#656A71; margin-bottom:12px;">Ruta: '
+        f'<b style="color:#292929;">{progreso["ruta"]}</b></div>'
+        f'<div style="display:flex; align-items:flex-start;">{pasos_html}</div>'
+        f'</div>'
+    )
