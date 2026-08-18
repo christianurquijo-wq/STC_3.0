@@ -14,7 +14,7 @@ def cargar_general():
     df = normalizar_columna_cedula(df, MAPEO_CEDULA["general"])
     return df
 
-col_logo1, col_logo2, col_titulo = st.columns([1, 1, 4])
+col_logo1, col_logo2, col_titulo, col_menu = st.columns([1, 1, 3, 1])
 with col_logo1:
     st.image("assets/Logo_STC_3_0.png", width=140)
 with col_logo2:
@@ -24,6 +24,27 @@ with col_titulo:
         "<h1 style='color:#292929; margin-top:10px;'>Control de Calidad STC 3.0</h1>",
         unsafe_allow_html=True,
     )
+with col_menu:
+    st.markdown("<div style='margin-top:35px;'></div>", unsafe_allow_html=True)
+    with st.popover("☰ Acciones", use_container_width=True):
+        st.markdown("**Webhooks**")
+        from webhooks import disparar_webhook
+        if st.button("📤 Enviar remisiones (n8n)", key="btn_webhook_remisiones"):
+            with st.spinner("Disparando flujo de remisiones..."):
+                exito, mensaje = disparar_webhook(
+                    url_env="WEBHOOK_REMISIONES_URL",
+                    header_nombre_env="WEBHOOK_REMISIONES_HEADER_NOMBRE",
+                    header_valor_env="WEBHOOK_REMISIONES_HEADER_VALOR",
+                )
+            if exito:
+                st.success(mensaje)
+            else:
+                st.error(mensaje)
+
+        st.divider()
+        st.markdown("**Reporte por correo**")
+        st.caption("El reporte usa los datos actuales del Overview.")
+        st.info("Ve al tab Overview para enviar el reporte con el detalle completo.")
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "🔍 Consulta por CC", "📄 Compilador FCS", "⏰ Alertas por tiempos", "📊 Overview", "🌐 Dashboard Proyecto",
