@@ -142,7 +142,7 @@ with tab1:
             cedula_encontrada = df_filtrado.iloc[0]["cedula_norm"]
             general_normalizado = normalizar_columna_cedula(f_ruta["general"], MAPEO_CEDULA["general"])
             progreso = calcular_progreso_ruta(
-                cedula_encontrada, general_normalizado, f_ruta["remisiones"],
+                cedula_encontrada, general_normalizado,
                 f_ruta["orientacion_consolidado"], f_ruta["encuesta_basico_jco"], f_ruta["encuesta_especializado"],
             )
 
