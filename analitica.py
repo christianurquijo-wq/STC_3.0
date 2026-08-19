@@ -384,7 +384,7 @@ def html_diagrama_ruta(progreso: dict) -> str:
 
 import datetime as dt
 
-def calcular_prediccion(orientacion: pd.DataFrame) -> dict:
+def calcular_prediccion(general: pd.DataFrame) -> dict:
     fecha_inicio = dt.date(2026, 7, 10)
     fecha_fin = dt.date(2026, 11, 30)
     hoy = dt.date.today()
@@ -394,14 +394,18 @@ def calcular_prediccion(orientacion: pd.DataFrame) -> dict:
     dias_restantes = max(0, (fecha_fin - hoy).days)
     pct_tiempo = round((dias_transcurridos / dias_totales) * 100, 1) if dias_totales else 0
 
-    estado = orientacion[CAMPO_ESTADO_FCS].astype(str).str.strip()
-    listos = estado != ""  # cualquier valor no vacío = "Listo para reportar" o ya "Reportado"
+    reporte = general["Reporte"].astype(str).str.strip()
+    paquete = general["Paquete"].astype(str).str.strip().str.upper()
+    estado_form = general["Estado de la formación"].astype(str).str.strip().str.upper()
 
-    paquete = orientacion["TIPO DE PAQUETE DE SERVICIO"].astype(str).str.strip().str.upper()
+    # Básico: Reporte FINALIZADO / FINALIZADO PENDIENTE X REMISIÓN + Paquete BÁSICO
+    finalizados_reporte = reporte.isin(["FINALIZADO", "FINALIZADO PENDIENTE X REMISIÓN"])
+    avance_basico = (finalizados_reporte & (paquete == "BÁSICO")).sum()
 
-    listos_basico = (listos & (paquete == "BÁSICO")).sum()
-    listos_especializado = (listos & (paquete == "ESPECIALIZADO")).sum()
-    listos_total = listos.sum()
+    # Especializado: Estado de la formación FINALIZADO / CERTIFICADO (solo aplica a Especializado/JCO)
+    avance_especializado = estado_form.isin(["FINALIZADO", "CERTIFICADO"]).sum()
+
+    avance_total = avance_basico + avance_especializado
 
     def pct(num, den):
         return round((num / den) * 100, 1) if den else 0
@@ -411,9 +415,9 @@ def calcular_prediccion(orientacion: pd.DataFrame) -> dict:
         "dias_totales": dias_totales,
         "dias_restantes": dias_restantes,
         "pct_tiempo": pct_tiempo,
-        "basico": {"real": listos_basico, "meta": META_TOTAL_BASICO, "pct_real": pct(listos_basico, META_TOTAL_BASICO)},
-        "especializado": {"real": listos_especializado, "meta": META_TOTAL_ESPECIALIZADO, "pct_real": pct(listos_especializado, META_TOTAL_ESPECIALIZADO)},
-        "total": {"real": listos_total, "meta": META_TOTAL_PROGRAMA, "pct_real": pct(listos_total, META_TOTAL_PROGRAMA)},
+        "basico": {"real": avance_basico, "meta": META_TOTAL_BASICO, "pct_real": pct(avance_basico, META_TOTAL_BASICO)},
+        "especializado": {"real": avance_especializado, "meta": META_TOTAL_ESPECIALIZADO, "pct_real": pct(avance_especializado, META_TOTAL_ESPECIALIZADO)},
+        "total": {"real": avance_total, "meta": META_TOTAL_PROGRAMA, "pct_real": pct(avance_total, META_TOTAL_PROGRAMA)},
     }
 
 
