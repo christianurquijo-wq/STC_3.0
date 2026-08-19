@@ -168,8 +168,6 @@ def es_entregado(serie: pd.Series) -> pd.Series:
     return serie.astype(str).str.contains("Reportado", case=False, na=False)
 
 def resumen_looker(general: pd.DataFrame, df_metas: pd.DataFrame, excluir_entregados: bool = False) -> dict:
-    verificados_monitoreo = (df["Verificación Calidad"].astype(str).str.strip().str.upper() == "TRUE").sum()
-    revisados_calidad_orientacion = (df["Fecha Calidad Orientación"].notna() & (df["Fecha Calidad Orientación"].astype(str).str.strip() != "")).sum()
     mes_actual = mes_actual_es()
 
     df = general.copy()
@@ -191,6 +189,9 @@ def resumen_looker(general: pd.DataFrame, df_metas: pd.DataFrame, excluir_entreg
     estado_form = df["Estado de la formación"].astype(str).str.strip().str.upper()
     formados_en_curso = (estado_form == "EN CURSO").sum()
     finalizados_formacion = estado_form.isin(["FINALIZADO", "CERTIFICADO"]).sum()
+
+    verificados_monitoreo = (df["Verificación Calidad"].astype(str).str.strip().str.upper() == "TRUE").sum()
+    revisados_calidad_orientacion = (df["Fecha Calidad Orientación"].notna() & (df["Fecha Calidad Orientación"].astype(str).str.strip() != "")).sum()
 
     if CAMPO_ENTREGADO in general.columns:
         cantidad_entregados = es_entregado(general[CAMPO_ENTREGADO]).sum()
