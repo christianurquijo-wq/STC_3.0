@@ -131,7 +131,7 @@ with tab1:
         "Estado de la formación", "Evento/Base", "Hito",
     ]
     columnas_mostrar = [c for c in columnas_mostrar if c in df_filtrado.columns]
-    st.dataframe(df_filtrado[columnas_mostrar], width='stretch')
+    st.dataframe(df_filtrado[columnas_mostrar], use_container_width=True)
 
     # --- Diagrama de ruta si la búsqueda de CC da un resultado único ---
     if filtro_cc and len(df_filtrado) == 1:
@@ -229,7 +229,7 @@ with tab2:
         df_fcs = df_fcs[df_fcs["_fecha_parseada"].between(inicio, fin)]
 
     st.write(f"**{len(df_fcs)} registros encontrados**")
-    st.dataframe(df_fcs.iloc[:, :FCS_ULTIMA_COLUMNA], width='stretch')
+    st.dataframe(df_fcs.iloc[:, :FCS_ULTIMA_COLUMNA], use_container_width=True)
 
     # --- Descarga con formato oficial FCS (columnas A hasta CE únicamente) ---
     csv_fcs = df_fcs.iloc[:, :FCS_ULTIMA_COLUMNA].to_csv(index=False, encoding="utf-8-sig")
@@ -269,7 +269,7 @@ with tab3:
     )
 
     evento = st.plotly_chart(
-        fig_resumen, width='stretch',
+        fig_resumen, use_container_width=True,
         on_select="rerun", selection_mode="points", key="grafica_resumen",
     )
 
@@ -279,7 +279,7 @@ with tab3:
         st.markdown(f"### Detalle: {caso_clic}")
         tabla_clic = resumen[caso_clic]
         st.write(f"**{len(tabla_clic)} registros**")
-        st.dataframe(tabla_clic, width='stretch')
+        st.dataframe(tabla_clic, use_container_width=True)
         csv_clic = tabla_clic.to_csv(index=False, encoding="utf-8-sig")
         st.download_button("⬇️ Descargar este caso (CSV)", csv_clic, f"{caso_clic}.csv", "text/csv")
     else:
@@ -304,7 +304,7 @@ with tab3:
     )
 
     evento_vacios = st.plotly_chart(
-        fig_vacios, width='stretch',
+        fig_vacios, use_container_width=True,
         on_select="rerun", selection_mode="points", key="grafica_vacios",
     )
 
@@ -313,7 +313,7 @@ with tab3:
         campo_clic = puntos_vacios[0]["y"]
         st.markdown(f"### Cédulas con '{campo_clic}' vacío")
         detalle_vacio = vacios[vacios["campo_vacio"] == campo_clic]
-        st.dataframe(detalle_vacio, width='stretch')
+        st.dataframe(detalle_vacio, use_container_width=True)
         csv_vacio = detalle_vacio.to_csv(index=False, encoding="utf-8-sig")
         st.download_button("⬇️ Descargar (CSV)", csv_vacio, f"vacios_{campo_clic}.csv", "text/csv")
     else:
@@ -434,7 +434,7 @@ with tab4:
             f["general"], f["encuesta_basico_jco"], f["encuesta_especializado"],
             excluir_entregados=excluir_entregados, por_paquete=vista_paquete,
         )
-        st.dataframe(tabla, width='stretch', hide_index=True)
+        st.dataframe(tabla, use_container_width=True, hide_index=True)
 
         st.markdown("#### Momento del proceso (Back UP)")
         df_momento = f["general"].copy()
@@ -449,7 +449,7 @@ with tab4:
         fig_momento = px.bar(conteo_momento, x="Etapa", y="Cantidad", text="Cantidad")
         fig_momento.update_traces(marker_color="#292929", textposition="outside")
         fig_momento.update_layout(height=450)
-        st.plotly_chart(fig_momento, width='stretch')
+        st.plotly_chart(fig_momento, use_container_width=True)
 
     # ============================================================
     # SECCIÓN 3: Gráficas de evolución temporal
@@ -463,7 +463,7 @@ with tab4:
         fig_v = px.line(serie_verificacion, x="Fecha", y="Cantidad", markers=True, text="Cantidad")
         fig_v.update_traces(line_color="#FD531E", textposition="top center")
         fig_v.update_layout(height=350)
-        st.plotly_chart(fig_v, width='stretch')
+        st.plotly_chart(fig_v, use_container_width=True)
 
         st.markdown("#### Orientación")
         ver_semanal_orient = st.toggle("📅 Gráfica por semanas", value=False, key="toggle_orient")
@@ -472,7 +472,7 @@ with tab4:
         fig_o = px.line(serie_orientacion, x="Fecha", y="Cantidad", markers=True, text="Cantidad")
         fig_o.update_traces(line_color="#821F0D", textposition="top center")
         fig_o.update_layout(height=350)
-        st.plotly_chart(fig_o, width='stretch')
+        st.plotly_chart(fig_o, use_container_width=True)
 
         st.markdown("#### Formación")
         ver_semanal_form = st.toggle("📅 Gráfica por semanas", value=False, key="toggle_form")
@@ -481,7 +481,7 @@ with tab4:
         fig_f = px.line(serie_formacion, x="Fecha", y="Cantidad", markers=True, text="Cantidad")
         fig_f.update_traces(line_color="#292929", textposition="top center")
         fig_f.update_layout(height=350)
-        st.plotly_chart(fig_f, width='stretch')
+        st.plotly_chart(fig_f, use_container_width=True)
 
 # =========================================================
 # TAB 5: Dashboard
