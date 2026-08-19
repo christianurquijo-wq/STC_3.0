@@ -379,22 +379,20 @@ with tab4:
     # SECCIÓN 1: Datos generales (KPIs)
     # ============================================================
     with st.expander("📊 Datos generales", expanded=True):
-        c1, c2, c3, c4 = st.columns(4)
+        c1, c2, c3, c4, c5 = st.columns(5)
         with c1: tarjeta(r["leads"], "Leads en CRM", "#656A71")
         with c2: tarjeta(r["matriculados"], "Matriculados CRM", "#656A71")
         with c3: tarjeta(r["en_proceso"], "En proceso (Verificación)", "#656A71")
-        with c4: tarjeta(f"{r['avance_fecha_verificacion']}%", "Avance a la fecha (Verif.)", "#FD531E", progreso=r['avance_fecha_verificacion'])
-
-        c1, c2 = st.columns(2)
-        with c1: tarjeta(r["verificados_monitoreo"], "Verificados por Monitoreo", "#656A71")
-        with c2: tarjeta(r["revisados_calidad_orientacion"], "Revisados Calidad Orientación", "#656A71")
+        with c4: tarjeta(r["verificados_monitoreo"], "Verificados por Monitoreo", "#656A71")
+        with c5: tarjeta(f"{r['avance_fecha_verificacion']}%", "Avance a la fecha (Verif.)", "#FD531E", progreso=r['avance_fecha_verificacion'])
 
         st.markdown("#### Orientación")
-        c1, c2, c3, c4 = st.columns(4)
+        c1, c2, c3, c4, c5 = st.columns(5)
         with c1: tarjeta(r["orientados"], "Orientados (Total)", "#656A71")
         with c2: tarjeta(r["orientados_basicos"], "Orientados Básicos", "#656A71")
         with c3: tarjeta(r["orientados_especializados"], "Orientados Especializados", "#656A71")
-        with c4: tarjeta(f"{r['avance_general_orientacion']}%", "Avance sobre meta total (5102)", "#FD531E", progreso=r['avance_general_orientacion'])
+        with c4: tarjeta(r["revisados_calidad_orientacion"], "Revisados Calidad Orientación", "#656A71")
+        with c5: tarjeta(f"{r['avance_general_orientacion']}%", "Avance sobre meta total (5102)", "#FD531E", progreso=r['avance_general_orientacion'])
 
         st.markdown("#### Formación")
         c1, c2, c3 = st.columns(3)
