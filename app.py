@@ -421,11 +421,11 @@ with tab4:
                 st.warning("Escribe al menos un correo destinatario.")
             else:
                 tabla_para_reporte = tabla_estados(
-                    f["general"], f["encuesta_basico_jco"], f["encuesta_especializado"],
+                    general_filtrado, f["encuesta_basico_jco"], f["encuesta_especializado"],
                     excluir_entregados=excluir_entregados, por_paquete=True,
                 )
 
-                df_momento_reporte = f["general"].copy()
+                df_momento_reporte = general_filtrado.copy()
                 if excluir_entregados and CAMPO_ENTREGADO in df_momento_reporte.columns:
                     from analitica import es_entregado
                     df_momento_reporte = df_momento_reporte[~es_entregado(df_momento_reporte[CAMPO_ENTREGADO])]
@@ -434,12 +434,19 @@ with tab4:
                 conteo_momento_reporte = conteo_momento_reporte.sort_values("Etapa")
 
                 series_reporte = {
-                    "verificacion": serie_temporal(f["general"], "Fecha", "Semanal"),
-                    "orientacion": serie_temporal(f["general"], "Fecha Orientación", "Semanal"),
-                    "formacion": serie_temporal(f["general"], "Fecha finalización", "Semanal"),
+                    "verificacion": serie_temporal(general_filtrado, "Fecha", "Semanal"),
+                    "orientacion": serie_temporal(general_filtrado, "Fecha Orientación", "Semanal"),
+                    "formacion": serie_temporal(general_filtrado, "Fecha clases", "Semanal"),
                 }
 
-                exito, mensaje = enviar_reporte(destinatarios, r, tabla_para_reporte, conteo_momento_reporte, series_reporte, pred)
+                filtros_activos = []
+                if f_paquete_ov != "Todos": filtros_activos.append(f"Paquete: {f_paquete_ov}")
+                if f_estado_ov != "Todos": filtros_activos.append(f"Estado: {f_estado_ov}")
+                if f_evento_ov != "Todos": filtros_activos.append(f"Evento/Base: {f_evento_ov}")
+                if f_hito_ov != "Todos": filtros_activos.append(f"Hito: {f_hito_ov}")
+                filtros_texto = ", ".join(filtros_activos) if filtros_activos else "Ninguno (datos completos)"
+
+                exito, mensaje = enviar_reporte(destinatarios, r, tabla_para_reporte, conteo_momento_reporte, series_reporte, pred, filtros_texto)
                 if exito:
                     st.success(mensaje)
                 else:
