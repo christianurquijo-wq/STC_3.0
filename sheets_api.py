@@ -34,6 +34,7 @@ def _con_reintentos(func, intentos=3, espera_base=2):
                 time.sleep(espera_base * intento)
     raise ultimo_error
 
+@st.cache_data(ttl=86400)
 def _get_sheet_title(spreadsheet_id: str, gid: str) -> str:
     service = _get_service()
     meta = _con_reintentos(lambda: service.spreadsheets().get(
