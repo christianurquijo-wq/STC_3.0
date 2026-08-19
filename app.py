@@ -79,7 +79,7 @@ from analitica import cargar_todo_cache, calcular_prediccion, html_franja_predic
 
 with carga_personalizada("Calculando proyección de avance..."):
     f_prediccion = cargar_todo_cache()
-    pred = calcular_prediccion(f_prediccion["general"])
+        pred = calcular_prediccion(f_prediccion["orientacion_consolidado"])
 
 st.markdown(html_franja_prediccion(pred), unsafe_allow_html=True)
 
