@@ -6,6 +6,7 @@ from cargar_datos import cargar_fuente
 from normalizador import normalizar_cedula
 from column_mapping import CAMPO_ESTADO_FCS
 from normalizador_texto import normalizar_texto
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Columnas del FCS a excluir de la auditoría de vacíos (G y H = fechas de
 # inscripción en plataformas que legítimamente quedan vacías para muchos casos)
@@ -16,11 +17,15 @@ def _set_cedulas(df: pd.DataFrame, columna: str) -> set:
     return set(df[columna].apply(normalizar_cedula).dropna())
 
 def cargar_todo():
+    nombres = ["general", "verificacion", "formacion", "orientacion_consolidado",
+               "remisiones", "encuesta_basico_jco", "encuesta_especializado"]
     fuentes = {}
-    for nombre in ["general", "verificacion", "formacion", "orientacion_consolidado",
-                   "remisiones", "encuesta_basico_jco", "encuesta_especializado"]:
-        df, _ = cargar_fuente(nombre)
-        fuentes[nombre] = df
+    with ThreadPoolExecutor(max_workers=7) as executor:
+        futuros = {executor.submit(cargar_fuente, nombre): nombre for nombre in nombres}
+        for futuro in as_completed(futuros):
+            nombre = futuros[futuro]
+            df, _ = futuro.result()
+            fuentes[nombre] = df
     return fuentes
 
 @st.cache_data(ttl=600)
