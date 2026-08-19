@@ -1,6 +1,7 @@
 # analitica.py
 import pandas as pd
 import streamlit as st
+import numpy as np
 from cargar_datos import cargar_fuente
 from normalizador import normalizar_cedula
 from column_mapping import CAMPO_ESTADO_FCS
@@ -394,46 +395,71 @@ def calcular_prediccion(general: pd.DataFrame) -> dict:
     dias_restantes = max(0, (fecha_fin - hoy).days)
     pct_tiempo = round((dias_transcurridos / dias_totales) * 100, 1) if dias_totales else 0
 
+    FESTIVOS_COLOMBIA_2026 = [
+        "2026-10-12",  # Día de la Raza / Diversidad Étnica y Cultural
+        "2026-11-02",  # Todos los Santos
+        "2026-11-16",  # Independencia de Cartagena
+    ]
+    dias_habiles_restantes = int(np.busday_count(
+        hoy.isoformat(), (fecha_fin + dt.timedelta(days=1)).isoformat(),
+        holidays=FESTIVOS_COLOMBIA_2026,
+    ))
+    dias_habiles_restantes = max(dias_habiles_restantes, 1)  # evita división por cero al final del proyecto
+
     reporte = general["Reporte"].astype(str).str.strip()
     paquete = general["Paquete"].astype(str).str.strip().str.upper()
     estado_form = general["Estado de la formación"].astype(str).str.strip().str.upper()
 
-    # Básico: Reporte FINALIZADO / FINALIZADO PENDIENTE X REMISIÓN + Paquete BÁSICO
     finalizados_reporte = reporte.isin(["FINALIZADO", "FINALIZADO PENDIENTE X REMISIÓN"])
     avance_basico = (finalizados_reporte & (paquete == "BÁSICO")).sum()
-
-    # Especializado: Estado de la formación FINALIZADO / CERTIFICADO (solo aplica a Especializado/JCO)
     avance_especializado = estado_form.isin(["FINALIZADO", "CERTIFICADO"]).sum()
-
     avance_total = avance_basico + avance_especializado
 
-    def pct(num, den):
-        return round((num / den) * 100, 1) if den else 0
+    def construir(real, meta):
+        esperado_num = round(meta * (pct_tiempo / 100))
+        diferencia_num = real - esperado_num
+        pct_real = round((real / meta) * 100, 1) if meta else 0
+        faltan_meta = max(meta - real, 0)
+        ritmo_diario_necesario = round(faltan_meta / dias_habiles_restantes, 1)
+        return {
+            "real": real, "meta": meta, "pct_real": pct_real,
+            "esperado_num": esperado_num, "diferencia_num": diferencia_num,
+            "ritmo_diario_necesario": ritmo_diario_necesario,
+        }
 
     return {
         "hoy": hoy.strftime("%d/%m/%Y"),
         "dias_totales": dias_totales,
         "dias_restantes": dias_restantes,
+        "dias_habiles_restantes": dias_habiles_restantes,
         "pct_tiempo": pct_tiempo,
-        "basico": {"real": avance_basico, "meta": META_TOTAL_BASICO, "pct_real": pct(avance_basico, META_TOTAL_BASICO)},
-        "especializado": {"real": avance_especializado, "meta": META_TOTAL_ESPECIALIZADO, "pct_real": pct(avance_especializado, META_TOTAL_ESPECIALIZADO)},
-        "total": {"real": avance_total, "meta": META_TOTAL_PROGRAMA, "pct_real": pct(avance_total, META_TOTAL_PROGRAMA)},
+        "basico": construir(avance_basico, META_TOTAL_BASICO),
+        "especializado": construir(avance_especializado, META_TOTAL_ESPECIALIZADO),
+        "total": construir(avance_total, META_TOTAL_PROGRAMA),
     }
 
 
-def html_barra_prediccion(etiqueta: str, real_pct: float, esperado_pct: float, real_num: int, meta_num: int) -> str:
-    color_barra = "#FD531E" if real_pct >= esperado_pct else "#821F0D"
+def html_barra_prediccion(etiqueta: str, datos: dict) -> str:
+    real_pct = datos["pct_real"]
+    esperado_pct = round((datos["esperado_num"] / datos["meta"]) * 100, 1) if datos["meta"] else 0
+    diferencia = datos["diferencia_num"]
+
+    color_barra = "#FD531E" if diferencia >= 0 else "#821F0D"
     ancho_real = min(real_pct, 100)
     ancho_esperado = min(esperado_pct, 100)
-    diferencia = round(real_pct - esperado_pct, 1)
-    signo = "+" if diferencia >= 0 else ""
-    color_dif = "#1E8E3E" if diferencia >= 0 else "#821F0D"
+
+    if diferencia >= 0:
+        texto_dif = f"+{diferencia} adelante del ritmo esperado"
+        color_dif = "#1E8E3E"
+    else:
+        texto_dif = f"{abs(diferencia)} personas atrás del ritmo esperado"
+        color_dif = "#821F0D"
 
     return (
         f'<div style="margin-bottom:14px;">'
         f'<div style="display:flex; justify-content:space-between; font-size:12px; color:#656A71; margin-bottom:4px;">'
-        f'<span><b style="color:#292929;">{etiqueta}</b> — {real_num}/{meta_num} ({real_pct}%)</span>'
-        f'<span style="color:{color_dif}; font-weight:bold;">{signo}{diferencia}% vs ritmo esperado</span>'
+        f'<span><b style="color:#292929;">{etiqueta}</b> — {datos["real"]}/{datos["meta"]} ({real_pct}%)</span>'
+        f'<span style="color:{color_dif}; font-weight:bold;">{texto_dif}</span>'
         f'</div>'
         f'<div style="position:relative; background-color:#EAEAEA; border-radius:4px; height:14px; width:100%;">'
         f'<div style="background-color:{color_barra}; width:{ancho_real}%; height:14px; border-radius:4px;"></div>'
@@ -444,9 +470,10 @@ def html_barra_prediccion(etiqueta: str, real_pct: float, esperado_pct: float, r
 
 
 def html_franja_prediccion(pred: dict) -> str:
-    barra_basico = html_barra_prediccion("Básico", pred["basico"]["pct_real"], pred["pct_tiempo"], pred["basico"]["real"], pred["basico"]["meta"])
-    barra_especializado = html_barra_prediccion("Especializado", pred["especializado"]["pct_real"], pred["pct_tiempo"], pred["especializado"]["real"], pred["especializado"]["meta"])
-    barra_total = html_barra_prediccion("Total", pred["total"]["pct_real"], pred["pct_tiempo"], pred["total"]["real"], pred["total"]["meta"])
+    barra_basico = html_barra_prediccion("Básico", pred["basico"])
+    barra_especializado = html_barra_prediccion("Especializado", pred["especializado"])
+    barra_total = html_barra_prediccion("Total", pred["total"])
+    tarjetas_ritmo = html_tarjetas_ritmo(pred)
 
     return (
         f'<div style="background-color:#FFFFFF; border:1px solid #EAEAEA; border-radius:10px; padding:16px 20px; margin-bottom:16px;">'
@@ -455,6 +482,30 @@ def html_franja_prediccion(pred: dict) -> str:
         f'<span style="font-size:13px; color:#292929; font-weight:bold;">⏳ {pred["dias_restantes"]} días restantes &nbsp;|&nbsp; {pred["pct_tiempo"]}% del tiempo transcurrido</span>'
         f'</div>'
         f'{barra_basico}{barra_especializado}{barra_total}'
-        f'<div style="font-size:11px; color:#656A71; margin-top:4px;">La línea negra marca dónde deberías estar según el tiempo transcurrido. Verde/rojo indica si vas adelante o atrás del ritmo esperado.</div>'
+        f'<div style="font-size:11px; color:#656A71; margin-top:4px;">La línea negra marca dónde deberías estar según el tiempo transcurrido.</div>'
+        f'{tarjetas_ritmo}'
+        f'</div>'
+    )
+
+def html_tarjetas_ritmo(pred: dict) -> str:
+    def tarjeta(etiqueta, datos, color):
+        return (
+            f'<div style="background-color:#FFFFFF; border-left:4px solid {color}; padding:14px 16px; '
+            f'border-radius:8px; flex:1; box-shadow:0 1px 3px rgba(0,0,0,0.08);">'
+            f'<div style="font-size:12px; color:#656A71; text-transform:uppercase;">{etiqueta}</div>'
+            f'<div style="font-size:22px; color:#292929; font-weight:bold; margin-top:4px;">{datos["ritmo_diario_necesario"]} / día hábil</div>'
+            f'<div style="font-size:11px; color:#656A71; margin-top:2px;">Faltan {datos["meta"] - datos["real"]} para la meta</div>'
+            f'</div>'
+        )
+
+    return (
+        f'<div style="margin-top:16px;">'
+        f'<div style="font-size:13px; color:#656A71; margin-bottom:8px;">'
+        f'Ritmo necesario para llegar a la meta el 30/11/2026 ({pred["dias_habiles_restantes"]} días hábiles restantes):</div>'
+        f'<div style="display:flex; gap:12px;">'
+        f'{tarjeta("Básico", pred["basico"], "#FD531E")}'
+        f'{tarjeta("Especializado", pred["especializado"], "#821F0D")}'
+        f'{tarjeta("Total", pred["total"], "#292929")}'
+        f'</div>'
         f'</div>'
     )
