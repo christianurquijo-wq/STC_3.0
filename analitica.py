@@ -167,7 +167,7 @@ def es_entregado(serie: pd.Series) -> pd.Series:
     """True solo si el valor contiene la palabra 'Reportado' (ej. 'Entregado P1 - Reportado')."""
     return serie.astype(str).str.contains("Reportado", case=False, na=False)
 
-def resumen_looker(general: pd.DataFrame, df_metas: pd.DataFrame, excluir_entregados: bool = False) -> dict:
+def resumen_looker(general: pd.DataFrame, df_metas: pd.DataFrame, excluir_entregados: bool = False, hito_filtro: str = "Todos") -> dict:
     mes_actual = mes_actual_es()
 
     df = general.copy()
@@ -198,9 +198,9 @@ def resumen_looker(general: pd.DataFrame, df_metas: pd.DataFrame, excluir_entreg
     else:
         cantidad_entregados = 0
 
-    meta_acum_basico = meta_acumulada(df_metas, mes_actual, "Básico")
-    meta_acum_especializado = meta_acumulada(df_metas, mes_actual, "Especializado")
-    meta_acum_total = meta_acumulada(df_metas, mes_actual, "Total")
+    meta_acum_basico = determinar_meta_denominador(hito_filtro, mes_actual, df_metas, "Básico")
+    meta_acum_especializado = determinar_meta_denominador(hito_filtro, mes_actual, df_metas, "Especializado")
+    meta_acum_total = determinar_meta_denominador(hito_filtro, mes_actual, df_metas, "Total")
 
     def pct(num, den):
         return round(100 * num / den, 2) if den else 0
@@ -531,3 +531,50 @@ def aplicar_filtros_generales(df: pd.DataFrame, paquete=None, estado=None, event
     if hito and hito != "Todos":
         resultado = resultado[resultado["Hito"] == hito]
     return resultado
+
+def meta_del_mes(df_metas: pd.DataFrame, mes: str, columna: str) -> float:
+    """Meta de un solo mes (no acumulada)."""
+    fila = df_metas[df_metas["Mes"] == mes]
+    return fila[columna].sum() if not fila.empty else 0
+
+
+def avance_por_mes(general: pd.DataFrame, orientacion_col_fecha: str, monitoreo_col_fecha: str,
+                    mes_nombre: str, año: int, df_metas: pd.DataFrame) -> dict:
+    meses_numero = {"Enero":1,"Febrero":2,"Marzo":3,"Abril":4,"Mayo":5,"Junio":6,
+                     "Julio":7,"Agosto":8,"Septiembre":9,"Octubre":10,"Noviembre":11,"Diciembre":12}
+    num_mes = meses_numero[mes_nombre]
+
+    fecha_monitoreo = pd.to_datetime(general[monitoreo_col_fecha], dayfirst=True, errors="coerce")
+    verificados_mes = ((general["Verificación Calidad"].astype(str).str.strip().str.upper() == "TRUE")
+                        & (fecha_monitoreo.dt.month == num_mes) & (fecha_monitoreo.dt.year == año)).sum()
+
+    fecha_orientacion = pd.to_datetime(general[orientacion_col_fecha], dayfirst=True, errors="coerce")
+    orientados_mes = (general[orientacion_col_fecha].notna()
+                       & (fecha_orientacion.dt.month == num_mes) & (fecha_orientacion.dt.year == año)).sum()
+
+    meta_verif_mes = meta_del_mes(df_metas, mes_nombre, "Total")
+    meta_orient_mes = meta_del_mes(df_metas, mes_nombre, "Total")
+
+    def pct(num, den):
+        return round((num / den) * 100, 1) if den else 0
+
+    return {
+        "verificados_mes": verificados_mes, "meta_verif_mes": meta_verif_mes,
+        "pct_verif_mes": pct(verificados_mes, meta_verif_mes),
+        "orientados_mes": orientados_mes, "meta_orient_mes": meta_orient_mes,
+        "pct_orient_mes": pct(orientados_mes, meta_orient_mes),
+    }
+
+def determinar_meta_denominador(hito_filtro: str, mes_actual: str, df_metas: pd.DataFrame, columna: str) -> float:
+    """
+    Si el filtro de Hito es 'Reportado <Mes>' -> meta de ESE mes puntual.
+    Si es 'En ruta' -> meta del mes en curso.
+    Si es 'Todos' (sin filtro específico) -> meta acumulada a la fecha.
+    """
+    if hito_filtro and hito_filtro.startswith("Reportado "):
+        mes_del_hito = hito_filtro.replace("Reportado ", "").strip()
+        return meta_del_mes(df_metas, mes_del_hito, columna)
+    elif hito_filtro == "En ruta":
+        return meta_del_mes(df_metas, mes_actual, columna)
+    else:
+        return meta_acumulada(df_metas, mes_actual, columna)

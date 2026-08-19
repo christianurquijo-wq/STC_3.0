@@ -371,7 +371,7 @@ with tab4:
     from analitica import aplicar_filtros_generales
     general_filtrado = aplicar_filtros_generales(f["general"], f_paquete_ov, f_estado_ov, f_evento_ov, f_hito_ov)
 
-    r = resumen_looker(general_filtrado, metas, excluir_entregados=excluir_entregados)
+    r = resumen_looker(general_filtrado, metas, excluir_entregados=excluir_entregados, hito_filtro=f_hito_ov)
 
     st.subheader(f"Dashboard General — mes en curso: {r['mes_actual']}")
 
