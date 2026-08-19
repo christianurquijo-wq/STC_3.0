@@ -4,6 +4,7 @@ import time
 import httplib2
 import plotly.express as px
 import streamlit as st
+import threading
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
@@ -13,14 +14,13 @@ try:
 except Exception:
     _API_KEY = os.getenv("GOOGLE_API_KEY")
 
-_service = None
+_local = threading.local()
 
 def _get_service():
-    global _service
-    if _service is None:
-        http = httplib2.Http(timeout=60)  # evita que se cuelgue indefinidamente
-        _service = build("sheets", "v4", developerKey=_API_KEY, http=http)
-    return _service
+    if not hasattr(_local, "service"):
+        http = httplib2.Http(timeout=60)
+        _local.service = build("sheets", "v4", developerKey=_API_KEY, http=http)
+    return _local.service
 
 def _con_reintentos(func, intentos=3, espera_base=2):
     """Reintenta una llamada a la API hasta 3 veces si falla por red, con espera creciente."""
