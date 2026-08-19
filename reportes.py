@@ -107,8 +107,6 @@ def construir_html_completo(r: dict, tabla_estados_df: pd.DataFrame, conteo_mome
     return f'''
     <html><body style="font-family: Arial, sans-serif; color:#292929; max-width:700px; margin:0 auto;">
         <h2 style="color:#FD531E; border-bottom:3px solid #FD531E; padding-bottom:8px;">Avance STC 3.0</h2>
-        
-        (f'<p style="color:#656A71; font-size:12px; margin-top:-4px;">Filtros aplicados: {filtros_texto}</p>' if filtros_texto else '')
 
         <table style="width:100%; border-collapse:collapse; margin-top:12px;">{kpis}</table>
 
