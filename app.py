@@ -1,13 +1,13 @@
 # app.py
 import streamlit as st
+st.set_page_config(page_title="Control STC 3.0", layout="wide")
+
 import pandas as pd
 import plotly.express as px
 from analitica import carga_personalizada
 from cargar_datos import cargar_fuente
 from normalizador import normalizar_columna_cedula
 from column_mapping import CAMPO_ENTREGADO, MAPEO_CEDULA
-
-st.set_page_config(page_title="Control STC 3.0", layout="wide")
 
 @st.cache_data(ttl=600)
 def cargar_general():
