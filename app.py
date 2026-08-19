@@ -439,6 +439,8 @@ with tab4:
                     "formacion": serie_temporal(general_filtrado, "Fecha clases", "Semanal"),
                 }
 
+                pred_para_reporte = calcular_prediccion(general_filtrado)
+
                 filtros_activos = []
                 if f_paquete_ov != "Todos": filtros_activos.append(f"Paquete: {f_paquete_ov}")
                 if f_estado_ov != "Todos": filtros_activos.append(f"Estado: {f_estado_ov}")
@@ -446,7 +448,7 @@ with tab4:
                 if f_hito_ov != "Todos": filtros_activos.append(f"Hito: {f_hito_ov}")
                 filtros_texto = ", ".join(filtros_activos) if filtros_activos else "Ninguno (datos completos)"
 
-                exito, mensaje = enviar_reporte(destinatarios, r, tabla_para_reporte, conteo_momento_reporte, series_reporte, pred, filtros_texto)
+                exito, mensaje = enviar_reporte(destinatarios, r, tabla_para_reporte, conteo_momento_reporte, series_reporte, pred_para_reporte, filtros_texto)
                 if exito:
                     st.success(mensaje)
                 else:
