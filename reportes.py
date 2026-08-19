@@ -60,7 +60,13 @@ def _tabla_estados_html(tabla: pd.DataFrame) -> str:
     encabezados = "".join(f'<th style="padding:8px; text-align:left; border-bottom:2px solid #292929; font-size:12px; color:#656A71;">{c}</th>' for c in tabla.columns)
     filas = ""
     for _, row in tabla.iterrows():
-        celdas = "".join(f'<td style="padding:8px; border-bottom:1px solid #eee; font-size:13px;">{"" if pd.isna(v) else v}</td>' for v in row)
+        def _fmt(v):
+            if pd.isna(v):
+                return ""
+            if isinstance(v, float) and v.is_integer():
+                return int(v)
+            return v
+        celdas = "".join(f'<td style="padding:8px; border-bottom:1px solid #eee; font-size:13px;">{_fmt(v)}</td>' for v in row)
         filas += f"<tr>{celdas}</tr>"
     return f'''
         <h3 style="color:#292929; margin-top:24px;">Tabla de procesos por etapa</h3>
@@ -71,15 +77,17 @@ def _tabla_estados_html(tabla: pd.DataFrame) -> str:
     '''
 
 
-def construir_html_completo(r: dict, tabla_estados_df: pd.DataFrame, conteo_momento_df: pd.DataFrame, series: dict) -> str:
+def construir_html_completo(r: dict, tabla_estados_df: pd.DataFrame, conteo_momento_df: pd.DataFrame, series: dict, pred: dict) -> str:
     kpis = "".join([
         _fila_kpi("Leads en CRM", r["leads"]),
         _fila_kpi("Matriculados CRM", r["matriculados"]),
         _fila_kpi("En proceso (Verificación)", r["en_proceso"]),
+        _fila_kpi("Verificados por Monitoreo", r["verificados_monitoreo"]),
         _fila_kpi("Avance a la fecha (Verificación)", f"{r['avance_fecha_verificacion']}%", destacado=True),
         _fila_kpi("Orientados (Total)", r["orientados"]),
         _fila_kpi("Orientados Básicos", r["orientados_basicos"]),
         _fila_kpi("Orientados Especializados", r["orientados_especializados"]),
+        _fila_kpi("Revisados Calidad Orientación", r["revisados_calidad_orientacion"]),
         _fila_kpi("Avance Orientación (meta total 5102)", f"{r['avance_general_orientacion']}%", destacado=True),
         _fila_kpi("Formación en curso", r["formados_en_curso"]),
         _fila_kpi("Formación finalizada", r["finalizados_formacion"]),
@@ -89,6 +97,7 @@ def construir_html_completo(r: dict, tabla_estados_df: pd.DataFrame, conteo_mome
     ])
 
     tabla_html = _tabla_estados_html(tabla_estados_df)
+    prediccion_html = _tabla_prediccion_html(pred)
     momento_html = _tabla_barras("Momento del proceso (Back UP)", conteo_momento_df, "Etapa", "Cantidad", color="#292929")
 
     verificacion_html = _tabla_barras("Evolución — Verificación (por semana)", series["verificacion"], "Fecha", "Cantidad", color="#FD531E")
@@ -102,6 +111,7 @@ def construir_html_completo(r: dict, tabla_estados_df: pd.DataFrame, conteo_mome
         <table style="width:100%; border-collapse:collapse; margin-top:12px;">{kpis}</table>
 
         {tabla_html}
+        {prediccion_html}
         {momento_html}
         {verificacion_html}
         {orientacion_html}
@@ -114,7 +124,7 @@ def construir_html_completo(r: dict, tabla_estados_df: pd.DataFrame, conteo_mome
     '''
 
 
-def enviar_reporte(destinatarios: list, r: dict, tabla_estados_df: pd.DataFrame, conteo_momento_df: pd.DataFrame, series: dict) -> tuple:
+def enviar_reporte(destinatarios: list, r: dict, tabla_estados_df: pd.DataFrame, conteo_momento_df: pd.DataFrame, series: dict, pred: dict) -> tuple:
     """Envía el reporte HTML completo (sin adjuntos). Retorna (exito: bool, mensaje: str)."""
     usuario, clave = _credenciales_gmail()
     if not usuario or not clave:
@@ -124,7 +134,7 @@ def enviar_reporte(destinatarios: list, r: dict, tabla_estados_df: pd.DataFrame,
     msg["From"] = usuario
     msg["To"] = ", ".join(destinatarios)
     msg["Subject"] = f"Avance STC 3.0 — {r['mes_actual']}"
-    msg.attach(MIMEText(construir_html_completo(r, tabla_estados_df, conteo_momento_df, series), "html"))
+    msg.attach(MIMEText(construir_html_completo(r, tabla_estados_df, conteo_momento_df, series, pred), "html"))
 
     try:
         with smtplib.SMTP("smtp.gmail.com", 587) as server:
@@ -169,3 +179,31 @@ def enviar_tabla_generica(destinatarios: list, titulo: str, tabla: pd.DataFrame)
         return True, f"Tabla enviada a {len(destinatarios)} destinatario(s)."
     except Exception as e:
         return False, f"Error al enviar: {e}"
+
+def _tabla_prediccion_html(pred: dict) -> str:
+    def fila_paquete(etiqueta, datos):
+        color = "#1E8E3E" if datos["diferencia_num"] >= 0 else "#821F0D"
+        texto_dif = f"+{datos['diferencia_num']}" if datos["diferencia_num"] >= 0 else f"{datos['diferencia_num']}"
+        return (
+            f'<tr>'
+            f'<td style="padding:8px; border-bottom:1px solid #eee; color:#656A71;">{etiqueta}</td>'
+            f'<td style="padding:8px; border-bottom:1px solid #eee; font-weight:bold;">{datos["real"]}/{datos["meta"]} ({datos["pct_real"]}%)</td>'
+            f'<td style="padding:8px; border-bottom:1px solid #eee; font-weight:bold; color:{color};">{texto_dif} vs esperado</td>'
+            f'<td style="padding:8px; border-bottom:1px solid #eee;">{datos["ritmo_diario_necesario"]}/día hábil</td>'
+            f'</tr>'
+        )
+
+    filas = fila_paquete("Básico", pred["basico"]) + fila_paquete("Especializado", pred["especializado"]) + fila_paquete("Total", pred["total"])
+
+    return (
+        f'<h3 style="color:#292929; margin-top:24px;">Avance general del proyecto</h3>'
+        f'<p style="font-size:12px; color:#656A71;">Proyecto: 10/07/2026 — 30/11/2026 · Hoy: {pred["hoy"]} · '
+        f'{pred["dias_restantes"]} días restantes ({pred["pct_tiempo"]}% del tiempo transcurrido)</p>'
+        f'<table style="width:100%; border-collapse:collapse;">'
+        f'<tr><th style="padding:8px; text-align:left; border-bottom:2px solid #292929; font-size:12px; color:#656A71;">Paquete</th>'
+        f'<th style="padding:8px; text-align:left; border-bottom:2px solid #292929; font-size:12px; color:#656A71;">Real/Meta</th>'
+        f'<th style="padding:8px; text-align:left; border-bottom:2px solid #292929; font-size:12px; color:#656A71;">vs. Ritmo esperado</th>'
+        f'<th style="padding:8px; text-align:left; border-bottom:2px solid #292929; font-size:12px; color:#656A71;">Ritmo necesario</th></tr>'
+        f'{filas}'
+        f'</table>'
+    )

@@ -439,7 +439,7 @@ with tab4:
                     "formacion": serie_temporal(f["general"], "Fecha finalización", "Semanal"),
                 }
 
-                exito, mensaje = enviar_reporte(destinatarios, r, tabla_para_reporte, conteo_momento_reporte, series_reporte)
+                exito, mensaje = enviar_reporte(destinatarios, r, tabla_para_reporte, conteo_momento_reporte, series_reporte, pred)
                 if exito:
                     st.success(mensaje)
                 else:
