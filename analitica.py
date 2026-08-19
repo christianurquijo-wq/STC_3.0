@@ -381,3 +381,76 @@ def html_diagrama_ruta(progreso: dict) -> str:
         f'<div style="display:flex; align-items:flex-start;">{pasos_html}</div>'
         f'</div>'
     )
+
+import datetime as dt
+
+def calcular_prediccion(orientacion: pd.DataFrame) -> dict:
+    fecha_inicio = dt.date(2026, 7, 10)
+    fecha_fin = dt.date(2026, 11, 30)
+    hoy = dt.date.today()
+
+    dias_totales = (fecha_fin - fecha_inicio).days
+    dias_transcurridos = max(0, min((hoy - fecha_inicio).days, dias_totales))
+    dias_restantes = max(0, (fecha_fin - hoy).days)
+    pct_tiempo = round((dias_transcurridos / dias_totales) * 100, 1) if dias_totales else 0
+
+    estado = orientacion[CAMPO_ESTADO_FCS].astype(str).str.strip()
+    listos = estado != ""  # cualquier valor no vacío = "Listo para reportar" o ya "Reportado"
+
+    paquete = orientacion["TIPO DE PAQUETE DE SERVICIO"].astype(str).str.strip().str.upper()
+
+    listos_basico = (listos & (paquete == "BÁSICO")).sum()
+    listos_especializado = (listos & (paquete == "ESPECIALIZADO")).sum()
+    listos_total = listos.sum()
+
+    def pct(num, den):
+        return round((num / den) * 100, 1) if den else 0
+
+    return {
+        "hoy": hoy.strftime("%d/%m/%Y"),
+        "dias_totales": dias_totales,
+        "dias_restantes": dias_restantes,
+        "pct_tiempo": pct_tiempo,
+        "basico": {"real": listos_basico, "meta": META_TOTAL_BASICO, "pct_real": pct(listos_basico, META_TOTAL_BASICO)},
+        "especializado": {"real": listos_especializado, "meta": META_TOTAL_ESPECIALIZADO, "pct_real": pct(listos_especializado, META_TOTAL_ESPECIALIZADO)},
+        "total": {"real": listos_total, "meta": META_TOTAL_PROGRAMA, "pct_real": pct(listos_total, META_TOTAL_PROGRAMA)},
+    }
+
+
+def html_barra_prediccion(etiqueta: str, real_pct: float, esperado_pct: float, real_num: int, meta_num: int) -> str:
+    color_barra = "#FD531E" if real_pct >= esperado_pct else "#821F0D"
+    ancho_real = min(real_pct, 100)
+    ancho_esperado = min(esperado_pct, 100)
+    diferencia = round(real_pct - esperado_pct, 1)
+    signo = "+" if diferencia >= 0 else ""
+    color_dif = "#1E8E3E" if diferencia >= 0 else "#821F0D"
+
+    return (
+        f'<div style="margin-bottom:14px;">'
+        f'<div style="display:flex; justify-content:space-between; font-size:12px; color:#656A71; margin-bottom:4px;">'
+        f'<span><b style="color:#292929;">{etiqueta}</b> — {real_num}/{meta_num} ({real_pct}%)</span>'
+        f'<span style="color:{color_dif}; font-weight:bold;">{signo}{diferencia}% vs ritmo esperado</span>'
+        f'</div>'
+        f'<div style="position:relative; background-color:#EAEAEA; border-radius:4px; height:14px; width:100%;">'
+        f'<div style="background-color:{color_barra}; width:{ancho_real}%; height:14px; border-radius:4px;"></div>'
+        f'<div style="position:absolute; top:-3px; left:{ancho_esperado}%; width:2px; height:20px; background-color:#292929;"></div>'
+        f'</div>'
+        f'</div>'
+    )
+
+
+def html_franja_prediccion(pred: dict) -> str:
+    barra_basico = html_barra_prediccion("Básico", pred["basico"]["pct_real"], pred["pct_tiempo"], pred["basico"]["real"], pred["basico"]["meta"])
+    barra_especializado = html_barra_prediccion("Especializado", pred["especializado"]["pct_real"], pred["pct_tiempo"], pred["especializado"]["real"], pred["especializado"]["meta"])
+    barra_total = html_barra_prediccion("Total", pred["total"]["pct_real"], pred["pct_tiempo"], pred["total"]["real"], pred["total"]["meta"])
+
+    return (
+        f'<div style="background-color:#FFFFFF; border:1px solid #EAEAEA; border-radius:10px; padding:16px 20px; margin-bottom:16px;">'
+        f'<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">'
+        f'<span style="font-size:13px; color:#656A71;">Proyecto: 10/07/2026 — 30/11/2026 &nbsp;·&nbsp; Hoy: {pred["hoy"]}</span>'
+        f'<span style="font-size:13px; color:#292929; font-weight:bold;">⏳ {pred["dias_restantes"]} días restantes &nbsp;|&nbsp; {pred["pct_tiempo"]}% del tiempo transcurrido</span>'
+        f'</div>'
+        f'{barra_basico}{barra_especializado}{barra_total}'
+        f'<div style="font-size:11px; color:#656A71; margin-top:4px;">La línea negra marca dónde deberías estar según el tiempo transcurrido. Verde/rojo indica si vas adelante o atrás del ritmo esperado.</div>'
+        f'</div>'
+    )

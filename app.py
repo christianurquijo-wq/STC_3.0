@@ -75,6 +75,14 @@ with col_menu:
         st.markdown("**Reporte por correo**")
         st.caption("Ve al tab Overview para enviar el reporte con el detalle completo.")
 
+from analitica import cargar_todo_cache, calcular_prediccion, html_franja_prediccion
+
+with carga_personalizada("Calculando proyección de avance..."):
+    f_prediccion = cargar_todo_cache()
+    pred = calcular_prediccion(f_prediccion["general"])
+
+st.markdown(html_franja_prediccion(pred), unsafe_allow_html=True)
+
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "🔍 Consulta por CC", "📄 Compilador FCS", "⏰ Alertas por tiempos", "📊 Overview", "🌐 Dashboard Proyecto",
 ])
