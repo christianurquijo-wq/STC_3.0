@@ -168,6 +168,8 @@ def es_entregado(serie: pd.Series) -> pd.Series:
     return serie.astype(str).str.contains("Reportado", case=False, na=False)
 
 def resumen_looker(general: pd.DataFrame, df_metas: pd.DataFrame, excluir_entregados: bool = False) -> dict:
+    verificados_monitoreo = (df["Verificación Calidad"].astype(str).str.strip().str.upper() == "TRUE").sum()
+    revisados_calidad_orientacion = (df["Fecha Calidad Orientación"].notna() & (df["Fecha Calidad Orientación"].astype(str).str.strip() != "")).sum()
     mes_actual = mes_actual_es()
 
     df = general.copy()
@@ -217,6 +219,8 @@ def resumen_looker(general: pd.DataFrame, df_metas: pd.DataFrame, excluir_entreg
         "avance_general_orientacion": pct(orientados, META_TOTAL_PROGRAMA),
         "avance_general_formacion": pct(finalizados_formacion, META_TOTAL_ESPECIALIZADO),
         "avance_entregas": pct(cantidad_entregados, META_TOTAL_PROGRAMA),
+        "verificados_monitoreo": verificados_monitoreo,
+        "revisados_calidad_orientacion": revisados_calidad_orientacion,
     }
 
 
@@ -514,3 +518,15 @@ def html_tarjetas_ritmo(pred: dict) -> str:
         f'</div>'
         f'</div>'
     )
+
+def aplicar_filtros_generales(df: pd.DataFrame, paquete=None, estado=None, evento=None, hito=None) -> pd.DataFrame:
+    resultado = df.copy()
+    if paquete and paquete != "Todos":
+        resultado = resultado[resultado["Paquete"] == paquete]
+    if estado and estado != "Todos":
+        resultado = resultado[resultado["Momento del proceso"] == estado]
+    if evento and evento != "Todos":
+        resultado = resultado[resultado["Evento/Base"] == evento]
+    if hito and hito != "Todos":
+        resultado = resultado[resultado["Hito"] == hito]
+    return resultado

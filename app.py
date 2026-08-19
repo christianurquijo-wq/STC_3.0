@@ -353,7 +353,25 @@ with tab4:
         value=False,
     )
 
-    r = resumen_looker(f["general"], metas, excluir_entregados=excluir_entregados)
+    st.markdown("#### Filtros")
+    fc1, fc2, fc3, fc4 = st.columns(4)
+    with fc1:
+        paquetes_ov = ["Todos"] + sorted(f["general"]["Paquete"].dropna().unique().tolist())
+        f_paquete_ov = st.selectbox("Paquete", paquetes_ov, key="ov_paquete")
+    with fc2:
+        estados_ov = ["Todos"] + sorted(f["general"]["Momento del proceso"].dropna().unique().tolist())
+        f_estado_ov = st.selectbox("Estado / Etapa", estados_ov, key="ov_estado")
+    with fc3:
+        eventos_ov = ["Todos"] + sorted(f["general"]["Evento/Base"].dropna().unique().tolist())
+        f_evento_ov = st.selectbox("Evento/Base", eventos_ov, key="ov_evento")
+    with fc4:
+        hitos_ov = ["Todos"] + sorted(f["general"]["Hito"].dropna().unique().tolist())
+        f_hito_ov = st.selectbox("Hito", hitos_ov, key="ov_hito")
+
+    from analitica import aplicar_filtros_generales
+    general_filtrado = aplicar_filtros_generales(f["general"], f_paquete_ov, f_estado_ov, f_evento_ov, f_hito_ov)
+
+    r = resumen_looker(general_filtrado, metas, excluir_entregados=excluir_entregados)
 
     st.subheader(f"Dashboard General — mes en curso: {r['mes_actual']}")
 
@@ -366,6 +384,10 @@ with tab4:
         with c2: tarjeta(r["matriculados"], "Matriculados CRM", "#656A71")
         with c3: tarjeta(r["en_proceso"], "En proceso (Verificación)", "#656A71")
         with c4: tarjeta(f"{r['avance_fecha_verificacion']}%", "Avance a la fecha (Verif.)", "#FD531E", progreso=r['avance_fecha_verificacion'])
+
+        c1, c2 = st.columns(2)
+        with c1: tarjeta(r["verificados_monitoreo"], "Verificados por Monitoreo", "#656A71")
+        with c2: tarjeta(r["revisados_calidad_orientacion"], "Revisados Calidad Orientación", "#656A71")
 
         st.markdown("#### Orientación")
         c1, c2, c3, c4 = st.columns(4)
