@@ -47,6 +47,11 @@ FUENTES = {
         "gid": "1167929471",
         "ancla": "CÉDULA",
     },
+    "subsanaciones": {
+        "id": "15pgRouShB-tUNbdtGYs-ziYeuDeqV0tl21Hb9lkDXto",
+        "gid": "1376346035",
+        "ancla": "Documento",
+    },
 }
 
 def url_csv(nombre_fuente: str) -> str:

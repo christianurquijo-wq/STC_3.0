@@ -252,6 +252,31 @@ with tab3:
         resumen = generar_resumen(f_tab3)
         vacios = campos_vacios_fcs(f_tab3["orientacion_consolidado"])
 
+    from cargar_datos import cargar_fuente as _cargar_fuente_sub
+
+    with carga_personalizada("Cargando subsanaciones..."):
+        subsanaciones, _ = _cargar_fuente_sub("subsanaciones")
+
+    st.subheader("📝 Subsanaciones pendientes (Orientación)")
+
+    col_sub1, col_sub2 = st.columns(2)
+    with col_sub1:
+        orientadores_sub = ["Todos"] + sorted(subsanaciones["Orientador/a"].dropna().unique().tolist())
+        f_orientador_sub = st.selectbox("Orientador/a", orientadores_sub, key="filtro_orientador_sub")
+    with col_sub2:
+        f_cc_sub = st.text_input("Buscar por CC (parcial o completo)", key="filtro_cc_sub")
+
+    subsanaciones_filtrado = subsanaciones.copy()
+    if f_orientador_sub != "Todos":
+        subsanaciones_filtrado = subsanaciones_filtrado[subsanaciones_filtrado["Orientador/a"] == f_orientador_sub]
+    if f_cc_sub:
+        subsanaciones_filtrado = subsanaciones_filtrado[subsanaciones_filtrado["Documento"].astype(str).str.contains(f_cc_sub, na=False)]
+
+    st.write(f"**{len(subsanaciones_filtrado)} registros encontrados**")
+    st.dataframe(subsanaciones_filtrado, use_container_width=True)
+
+    st.divider()
+
     st.subheader("Resumen de inconsistencias por caso")
 
     df_resumen = pd.DataFrame([
