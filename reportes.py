@@ -137,7 +137,7 @@ def enviar_reporte(destinatarios: list, r: dict, tabla_estados_df: pd.DataFrame,
     msg["From"] = usuario
     msg["To"] = ", ".join(destinatarios)
     msg["Subject"] = f"Avance STC 3.0"
-    msg.attach(MIMEText(construir_html_completo(r, tabla_estados_df, conteo_momento_df, series, pred), "html"))
+    msg.attach(MIMEText(construir_html_completo(r, tabla_estados_df, conteo_momento_df, series, pred, formacion_estado_df, filtros_texto), "html"))
 
     try:
         with smtplib.SMTP("smtp.gmail.com", 587) as server:
