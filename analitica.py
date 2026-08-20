@@ -226,10 +226,14 @@ def resumen_looker(general: pd.DataFrame, df_metas: pd.DataFrame, excluir_entreg
 
 
 def tabla_estados(general: pd.DataFrame, enc_basico: pd.DataFrame, enc_esp: pd.DataFrame,
-                   excluir_entregados: bool = False, por_paquete: bool = False) -> pd.DataFrame:
+                   excluir_entregados: bool = False, por_paquete: bool = False, cedulas_filtro: set = None) -> pd.DataFrame:
     df = general.copy()
     if excluir_entregados and CAMPO_ENTREGADO in df.columns:
         df = df[~es_entregado(df[CAMPO_ENTREGADO])]
+
+    if cedulas_filtro is not None:
+        enc_basico = enc_basico[enc_basico["CEDULA"].apply(normalizar_cedula).isin(cedulas_filtro)]
+        enc_esp = enc_esp[enc_esp["CEDULA"].apply(normalizar_cedula).isin(cedulas_filtro)]
 
     paquete = df["Paquete"].astype(str).str.strip().str.upper()
     reporte = df["Reporte"].astype(str).str.strip()

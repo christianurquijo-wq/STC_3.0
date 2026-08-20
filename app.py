@@ -424,6 +424,7 @@ with tab4:
                 tabla_para_reporte = tabla_estados(
                     general_filtrado, f["encuesta_basico_jco"], f["encuesta_especializado"],
                     excluir_entregados=excluir_entregados, por_paquete=True,
+                    cedulas_filtro=set(general_filtrado["cedula_norm"]),
                 )
 
                 df_momento_reporte = general_filtrado.copy()
@@ -465,8 +466,9 @@ with tab4:
     with st.expander("📋 Tabla de procesos y estado actual", expanded=False):
         vista_paquete = st.toggle("Ver desglosado por paquete (Básico/Especializado)", value=False)
         tabla = tabla_estados(
-            f["general"], f["encuesta_basico_jco"], f["encuesta_especializado"],
+            general_filtrado, f["encuesta_basico_jco"], f["encuesta_especializado"],
             excluir_entregados=excluir_entregados, por_paquete=vista_paquete,
+            cedulas_filtro=set(general_filtrado["cedula_norm"]),
         )
         st.dataframe(tabla, use_container_width=True, hide_index=True)
 
