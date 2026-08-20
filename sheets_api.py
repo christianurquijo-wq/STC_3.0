@@ -18,7 +18,7 @@ _local = threading.local()
 
 def _get_service():
     if not hasattr(_local, "service"):
-        http = httplib2.Http(timeout=60)
+        http = httplib2.Http(timeout=20)
         _local.service = build("sheets", "v4", developerKey=_API_KEY, http=http)
     return _local.service
 
