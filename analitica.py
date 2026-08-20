@@ -665,3 +665,22 @@ def filtrar_por_documento_y_estado(matriz: pd.DataFrame, columna_documento: str,
 
 def es_valor_verdadero(valor) -> bool:
     return str(valor).strip().upper() in ("TRUE", "VERDADERO", "SI", "SÍ", "1")
+
+def datos_grafica_documentos(matriz: pd.DataFrame) -> pd.DataFrame:
+    filas = []
+    for col in COLUMNAS_REQUISITOS:
+        valores = matriz[col].apply(es_valor_verdadero)
+        cargados = int(valores.sum())
+        no_cargados = int(len(matriz) - cargados)
+        nombre_doc = col.replace(" ✓", "")
+        filas.append({"Documento": nombre_doc, "Estado": "Cargado", "Cantidad": cargados})
+        filas.append({"Documento": nombre_doc, "Estado": "No cargado", "Cantidad": no_cargados})
+    return pd.DataFrame(filas)
+
+
+def tabla_editable_documentos(matriz: pd.DataFrame) -> pd.DataFrame:
+    columnas_base = ["fila_sheet", "CÉDULA", "NOMBRE COMPLETO", "PAQUETE"]
+    df = matriz[columnas_base].copy()
+    for col in COLUMNAS_REQUISITOS:
+        df[col.replace(" ✓", "")] = matriz[col].apply(es_valor_verdadero)
+    return df.reset_index(drop=True)

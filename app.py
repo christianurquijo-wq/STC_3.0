@@ -540,66 +540,101 @@ with tab6:
 
     st.subheader("Evidencias documentales para entrega a SDDE")
 
-    with st.expander("📊 Resumen de cumplimiento", expanded=True):
-        resumen_doc = resumen_cumplimiento_documental(matriz)
-        c1, c2, c3, c4 = st.columns(4)
-        with c1: tarjeta(resumen_doc["total"], "Total registros", "#656A71")
-        with c2: tarjeta(resumen_doc["completos"], "100% completos", "#1E8E3E")
-        with c3: tarjeta(resumen_doc["incompletos"], "Con pendientes", "#821F0D")
-        with c4: tarjeta(f"{resumen_doc['promedio']}%", "Promedio cumplimiento", "#FD531E")
-
-        fig_dist = px.bar(resumen_doc["distribucion"], x="% Cumplimiento", y="Cantidad", text="Cantidad")
-        fig_dist.update_traces(marker_color="#FD531E", textposition="outside")
-        fig_dist.update_layout(height=350)
-        st.plotly_chart(fig_dist, use_container_width=True)
-
-    with st.expander("📤 Marcar documentos cargados", expanded=False):
-        from analitica import cargar_matriz_documental_con_filas, filtrar_por_documento_y_estado
+    with st.expander("📊 Gestión de documentos (cargados / no cargados)", expanded=True):
+        from analitica import (
+            cargar_matriz_documental_con_filas, datos_grafica_documentos,
+            tabla_editable_documentos, es_valor_verdadero, COLUMNAS_REQUISITOS,
+        )
         from sheets_write import marcar_documento_cargado
         from config import FUENTES
 
         matriz_editable = cargar_matriz_documental_con_filas()
+        matriz_editable = matriz_editable[matriz_editable["CÉDULA"].notna() & (matriz_editable["CÉDULA"].astype(str).str.strip() != "")]
 
-        fc1, fc2, fc3 = st.columns(3)
-        with fc1:
-            doc_seleccionado = st.selectbox("Documento a cargar", COLUMNAS_REQUISITOS, key="doc_a_cargar")
-        with fc2:
-            estados_disponibles = ["Todos"] + sorted(matriz_editable[doc_seleccionado].dropna().unique().tolist())
-            estado_seleccionado = st.selectbox("Estado", estados_disponibles, key="estado_doc")
-        with fc3:
-            cc_filtro_marcar = st.text_input("Buscar por CC (parcial o completo)", key="cc_marcar_doc")
+        datos_grafica = datos_grafica_documentos(matriz_editable)
+        fig_docs = px.bar(
+            datos_grafica, x="Documento", y="Cantidad", color="Estado",
+            color_discrete_map={"Cargado": "#1E8E3E", "No cargado": "#821F0D"},
+            barmode="stack", text="Cantidad",
+        )
+        fig_docs.update_layout(height=450, xaxis_tickangle=-30)
 
-        filtrado_doc = filtrar_por_documento_y_estado(matriz_editable, doc_seleccionado, estado_seleccionado)
-        if cc_filtro_marcar:
-            filtrado_doc = filtrado_doc[filtrado_doc["cedula_norm"].str.contains(cc_filtro_marcar, na=False)]
-        st.write(f"**{len(filtrado_doc)} personas encontradas**")
+        evento_docs = st.plotly_chart(
+            fig_docs, use_container_width=True,
+            on_select="rerun", selection_mode="points", key="grafica_documentos",
+        )
 
-        columna_indice = matriz_editable.columns.get_loc(doc_seleccionado)
-        spreadsheet_id = FUENTES["matriz_documental"]["id"]
+        puntos_docs = evento_docs.get("selection", {}).get("points", []) if evento_docs else []
 
-        from analitica import es_valor_verdadero
+        col_filtro1, col_filtro2 = st.columns([3, 1])
+        with col_filtro1:
+            if puntos_docs:
+                doc_clic = puntos_docs[0]["x"]
+                estado_clic = puntos_docs[0]["legendgroup"] if "legendgroup" in puntos_docs[0] else None
+                st.info(f"Filtrando por: **{doc_clic}**" + (f" — {estado_clic}" if estado_clic else ""))
+            else:
+                doc_clic = None
+                estado_clic = None
+        with col_filtro2:
+            if st.button("🔄 Quitar filtro de gráfica"):
+                st.rerun()
 
-        for _, fila in filtrado_doc.iterrows():
-            c1, c2, c3, c4 = st.columns([2, 3, 2, 1])
-            with c1: st.write(fila["CÉDULA"])
-            with c2: st.write(fila["NOMBRE COMPLETO"])
-            with c3: st.write(f"Estado actual: {fila[doc_seleccionado]}")
+        cc_filtro_gestion = st.text_input("Buscar por CC (parcial o completo)", key="cc_gestion_docs")
 
-            esta_marcado = es_valor_verdadero(fila[doc_seleccionado])
-            valor_destino = not esta_marcado
-            etiqueta_boton = "❌ Marcar FALSE" if esta_marcado else "✅ Marcar TRUE"
+        matriz_tabla = matriz_editable.copy()
+        if cc_filtro_gestion:
+            matriz_tabla = matriz_tabla[matriz_tabla["cedula_norm"].str.contains(cc_filtro_gestion, na=False)]
+        if doc_clic:
+            columna_real_clic = doc_clic + " ✓"
+            if columna_real_clic in matriz_tabla.columns:
+                if estado_clic == "Cargado":
+                    matriz_tabla = matriz_tabla[matriz_tabla[columna_real_clic].apply(es_valor_verdadero)]
+                elif estado_clic == "No cargado":
+                    matriz_tabla = matriz_tabla[~matriz_tabla[columna_real_clic].apply(es_valor_verdadero)]
 
-            with c4:
-                if st.button(etiqueta_boton, key=f"marcar_{fila['fila_sheet']}_{doc_seleccionado}"):
-                    exito, mensaje = marcar_documento_cargado(
-                        spreadsheet_id, "MATRIZ DOCUMENTAL", int(fila["fila_sheet"]), columna_indice, valor_destino
-                    )
-                    if exito:
-                        st.success(mensaje)
-                        st.cache_data.clear()
-                        st.rerun()
-                    else:
-                        st.error(mensaje)
+        st.write(f"**{len(matriz_tabla)} personas** — haz clic en las casillas para marcar/desmarcar documentos")
+
+        tabla_para_editar = tabla_editable_documentos(matriz_tabla)
+
+        column_config = {
+            "fila_sheet": None,
+            "CÉDULA": st.column_config.TextColumn(disabled=True),
+            "NOMBRE COMPLETO": st.column_config.TextColumn(disabled=True),
+            "PAQUETE": st.column_config.TextColumn(disabled=True),
+        }
+        for col in COLUMNAS_REQUISITOS:
+            nombre_corto = col.replace(" ✓", "")
+            column_config[nombre_corto] = st.column_config.CheckboxColumn(nombre_corto)
+
+        st.data_editor(
+            tabla_para_editar,
+            column_config=column_config,
+            hide_index=True,
+            key="editor_documentos",
+            use_container_width=True,
+        )
+
+        cambios = st.session_state.get("editor_documentos", {}).get("edited_rows", {})
+        if cambios:
+            doc_column_map = {c.replace(" ✓", ""): c for c in COLUMNAS_REQUISITOS}
+            spreadsheet_id = FUENTES["matriz_documental"]["id"]
+            hubo_error = False
+            for fila_idx, cambios_columna in cambios.items():
+                fila_sheet_real = int(tabla_para_editar.iloc[int(fila_idx)]["fila_sheet"])
+                for nombre_corto, nuevo_valor in cambios_columna.items():
+                    columna_real = doc_column_map.get(nombre_corto)
+                    if columna_real:
+                        columna_indice = matriz_editable.columns.get_loc(columna_real)
+                        exito, mensaje = marcar_documento_cargado(
+                            spreadsheet_id, "MATRIZ DOCUMENTAL", fila_sheet_real, columna_indice, bool(nuevo_valor)
+                        )
+                        if not exito:
+                            hubo_error = True
+                            st.error(mensaje)
+            if not hubo_error:
+                st.success("Cambios guardados correctamente.")
+                st.cache_data.clear()
+                st.rerun()
 
     with st.expander("📦 Estado de remisión al gestor", expanded=False):
         estado_remision = resumen_estado_remision(matriz)
