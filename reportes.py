@@ -77,7 +77,7 @@ def _tabla_estados_html(tabla: pd.DataFrame) -> str:
     '''
 
 
-def construir_html_completo(r: dict, tabla_estados_df: pd.DataFrame, conteo_momento_df: pd.DataFrame, series: dict, pred: dict,  filtros_texto: str = "") -> str:
+def construir_html_completo(r: dict, tabla_estados_df: pd.DataFrame, conteo_momento_df: pd.DataFrame, series: dict, pred: dict, formacion_estado_df: pd.DataFrame, filtros_texto: str = "") -> str:
     kpis = "".join([
         _fila_kpi("Leads en CRM", r["leads"]),
         _fila_kpi("Matriculados CRM", r["matriculados"]),
@@ -103,10 +103,12 @@ def construir_html_completo(r: dict, tabla_estados_df: pd.DataFrame, conteo_mome
     verificacion_html = _tabla_barras("Evolución — Verificación (por semana)", series["verificacion"], "Fecha", "Cantidad", color="#FD531E")
     orientacion_html = _tabla_barras("Evolución — Orientación (por semana)", series["orientacion"], "Fecha", "Cantidad", color="#821F0D")
     formacion_html = _tabla_barras("Evolución — Formación (por semana)", series["formacion"], "Fecha", "Cantidad", color="#656A71")
+    formacion_estado_html = _tabla_barras("Formación por estado (Finalizado / Certificado / En curso)", formacion_estado_df, "Estado", "Cantidad", color="#FD531E")
 
     return f'''
     <html><body style="font-family: Arial, sans-serif; color:#292929; max-width:700px; margin:0 auto;">
         <h2 style="color:#FD531E; border-bottom:3px solid #FD531E; padding-bottom:8px;">Avance STC 3.0</h2>
+        {f'<p style="color:#656A71; font-size:12px; margin-top:-4px;">Filtros aplicados: {filtros_texto}</p>' if filtros_texto else ''}
 
         <table style="width:100%; border-collapse:collapse; margin-top:12px;">{kpis}</table>
 
@@ -116,6 +118,7 @@ def construir_html_completo(r: dict, tabla_estados_df: pd.DataFrame, conteo_mome
         {verificacion_html}
         {orientacion_html}
         {formacion_html}
+        {formacion_estado_html}
 
         <p style="color:#656A71; font-size:11px; margin-top:30px; border-top:1px solid #eee; padding-top:12px;">
             Generado automáticamente desde el Dashboard de Control de Calidad STC 3.0.
@@ -124,7 +127,7 @@ def construir_html_completo(r: dict, tabla_estados_df: pd.DataFrame, conteo_mome
     '''
 
 
-def enviar_reporte(destinatarios: list, r: dict, tabla_estados_df: pd.DataFrame, conteo_momento_df: pd.DataFrame, series: dict, pred: dict, filtros_texto: str = "") -> tuple:
+def enviar_reporte(destinatarios: list, r: dict, tabla_estados_df: pd.DataFrame, conteo_momento_df: pd.DataFrame, series: dict, pred: dict, formacion_estado_df: pd.DataFrame, filtros_texto: str = "") -> tuple:
     """Envía el reporte HTML completo (sin adjuntos). Retorna (exito: bool, mensaje: str)."""
     usuario, clave = _credenciales_gmail()
     if not usuario or not clave:
@@ -162,7 +165,7 @@ def enviar_tabla_generica(destinatarios: list, titulo: str, tabla: pd.DataFrame)
             <p style="color:#656A71;">Se adjunta el detalle en formato CSV — {len(tabla)} registros.</p>
         </body></html>
     '''
-    msg.attach(MIMEText(cuerpo, "html"))
+    msg.attach(MIMEText(construir_html_completo(r, tabla_estados_df, conteo_momento_df, series, pred, formacion_estado_df, filtros_texto), "html"))
 
     import io
     buffer = io.StringIO()
