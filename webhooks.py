@@ -29,7 +29,7 @@ def disparar_webhook(url_env: str, header_nombre_env: str = None, header_valor_e
     try:
         resp = requests.post(url, headers=headers, timeout=15)
         if resp.status_code in (200, 201, 202, 204):
-            return True, "Flujo de remisiones disparado correctamente."
+            return True, "Flujo disparado correctamente."
         return False, f"El webhook respondió con código {resp.status_code}."
     except Exception as e:
         return False, f"Error al conectar con el webhook: {e}"
