@@ -370,7 +370,8 @@ with tab4:
         f_hito_ov = st.selectbox("Hito", hitos_ov, key="ov_hito")
 
     from analitica import aplicar_filtros_generales
-    general_filtrado = aplicar_filtros_generales(f["general"], f_paquete_ov, f_estado_ov, f_evento_ov, f_hito_ov)
+    general_normalizado_ov = normalizar_columna_cedula(f["general"], MAPEO_CEDULA["general"])
+    general_filtrado = aplicar_filtros_generales(general_normalizado_ov, f_paquete_ov, f_estado_ov, f_evento_ov, f_hito_ov)
 
     r = resumen_looker(general_filtrado, metas, excluir_entregados=excluir_entregados, hito_filtro=f_hito_ov)
 

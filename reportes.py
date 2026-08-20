@@ -103,7 +103,7 @@ def construir_html_completo(r: dict, tabla_estados_df: pd.DataFrame, conteo_mome
     verificacion_html = _tabla_barras("Evolución — Verificación (por semana)", series["verificacion"], "Fecha", "Cantidad", color="#FD531E")
     orientacion_html = _tabla_barras("Evolución — Orientación (por semana)", series["orientacion"], "Fecha", "Cantidad", color="#821F0D")
     formacion_html = _tabla_barras("Evolución — Formación (por semana)", series["formacion"], "Fecha", "Cantidad", color="#656A71")
-    formacion_estado_html = _tabla_barras("Formación por estado (Finalizado / Certificado / En curso)", formacion_estado_df, "Estado", "Cantidad", color="#FD531E")
+    formacion_estado_html = _tabla_barras("Formación por estado (Finalizado / Certificado / En curso)", formacion_estado_df, "Estado", "Cantidad", color="#c32e13")
 
     return f'''
     <html><body style="font-family: Arial, sans-serif; color:#292929; max-width:700px; margin:0 auto;">
