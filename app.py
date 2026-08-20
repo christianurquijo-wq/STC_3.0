@@ -8,6 +8,7 @@ from analitica import carga_personalizada
 from cargar_datos import cargar_fuente
 from normalizador import normalizar_columna_cedula
 from column_mapping import CAMPO_ENTREGADO, MAPEO_CEDULA
+from analitica import serie_orientacion_filtrada
 
 @st.cache_data(ttl=600)
 def cargar_general():
@@ -400,16 +401,6 @@ with tab4:
         with c2: tarjeta(r["finalizados_formacion"], "Finalizados", "#656A71")
         with c3: tarjeta(f"{r['avance_general_formacion']}%", "Avance a la fecha", "#FD531E", progreso=r['avance_general_formacion'])
 
-        from analitica import datos_formacion_apilada
-        datos_form_apilada = datos_formacion_apilada(general_filtrado)
-        fig_form_apilada = px.bar(
-            datos_form_apilada, x="Formación", y="Cantidad", color="Estado", text="Cantidad",
-            color_discrete_map={"FINALIZADO": "#1E8E3E", "CERTIFICADO": "#FD531E", "EN CURSO": "#656A71"},
-            barmode="stack",
-        )
-        fig_form_apilada.update_layout(height=300, showlegend=True)
-        st.plotly_chart(fig_form_apilada, use_container_width=True)
-
         st.markdown("#### Entregas")
         c1, c2 = st.columns(2)
         with c1: tarjeta(r["cantidad_entregados"], "Cantidad entregados", "#656A71")
@@ -445,8 +436,8 @@ with tab4:
 
                 series_reporte = {
                     "verificacion": serie_temporal(general_filtrado, "Fecha", "Semanal"),
-                    "orientacion": serie_temporal(general_filtrado, "Fecha Orientación", "Semanal"),
-                    "formacion": serie_temporal(general_filtrado, "Fecha clases", "Semanal"),
+                    "orientacion": serie_orientacion_filtrada(general_filtrado, "Semanal"),
+                    "formacion": serie_temporal(general_filtrado, "Fecha Finalización", "Semanal"),
                 }
 
                 pred_para_reporte = calcular_prediccion(general_filtrado)
@@ -458,7 +449,11 @@ with tab4:
                 if f_hito_ov != "Todos": filtros_activos.append(f"Hito: {f_hito_ov}")
                 filtros_texto = ", ".join(filtros_activos) if filtros_activos else "Ninguno (datos completos)"
 
-                exito, mensaje = enviar_reporte(destinatarios, r, tabla_para_reporte, conteo_momento_reporte, series_reporte, pred_para_reporte, filtros_texto)
+                from analitica import datos_formacion_apilada
+                formacion_estado_reporte = datos_formacion_apilada(general_filtrado)
+
+                exito, mensaje = enviar_reporte(destinatarios, r, tabla_para_reporte, conteo_momento_reporte, series_reporte, pred_para_reporte, formacion_estado_reporte, filtros_texto)
+                
                 if exito:
                     st.success(mensaje)
                 else:
@@ -507,7 +502,7 @@ with tab4:
         st.markdown("#### Orientación")
         ver_semanal_orient = st.toggle("📅 Gráfica por semanas", value=False, key="toggle_orient")
         granularidad_orient = "Semanal" if ver_semanal_orient else "Diaria"
-        serie_orientacion = serie_temporal(f["general"], "Fecha Orientación", granularidad_orient)
+        serie_orientacion = serie_orientacion_filtrada(general_filtrado, granularidad_orient)
         fig_o = px.line(serie_orientacion, x="Fecha", y="Cantidad", markers=True, text="Cantidad")
         fig_o.update_traces(line_color="#821F0D", textposition="top center")
         fig_o.update_layout(height=350)
@@ -516,7 +511,7 @@ with tab4:
         st.markdown("#### Formación")
         ver_semanal_form = st.toggle("📅 Gráfica por semanas", value=False, key="toggle_form")
         granularidad_form = "Semanal" if ver_semanal_form else "Diaria"
-        serie_formacion = serie_temporal(f["general"], "Fecha finalización", granularidad_form)
+        serie_formacion = serie_temporal(general_filtrado, "Fecha Finalización", granularidad_form)
         fig_f = px.line(serie_formacion, x="Fecha", y="Cantidad", markers=True, text="Cantidad")
         fig_f.update_traces(line_color="#292929", textposition="top center")
         fig_f.update_layout(height=350)

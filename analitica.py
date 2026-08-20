@@ -690,3 +690,9 @@ def datos_formacion_apilada(general: pd.DataFrame) -> pd.DataFrame:
     conteo = estado_form[estado_form.isin(["FINALIZADO", "CERTIFICADO", "EN CURSO"])].value_counts()
     df = pd.DataFrame([{"Formación": "Formación", "Estado": estado, "Cantidad": int(cant)} for estado, cant in conteo.items()])
     return df
+
+def serie_orientacion_filtrada(general: pd.DataFrame, granularidad: str = "Semanal") -> pd.DataFrame:
+    """Solo cuenta fechas de personas cuyo Reporte es FINALIZADO/FINALIZADO PENDIENTE X REMISIÓN (mismo criterio del KPI)."""
+    reporte = general["Reporte"].astype(str).str.strip()
+    filtrado = general[reporte.isin(["FINALIZADO", "FINALIZADO PENDIENTE X REMISIÓN"])]
+    return serie_temporal(filtrado, "Fecha Orientación", granularidad)
