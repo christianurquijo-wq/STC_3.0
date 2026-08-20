@@ -578,3 +578,69 @@ def determinar_meta_denominador(hito_filtro: str, mes_actual: str, df_metas: pd.
         return meta_del_mes(df_metas, mes_actual, columna)
     else:
         return meta_acumulada(df_metas, mes_actual, columna)
+
+# --- Gestión Documental / Evidencias SDDE ---
+
+COLUMNAS_REQUISITOS = [
+    "CÉDULA DE CIUDADANÍA ✓", "ADRES ✓", "ACJ ✓", "DJ ✓", "RENEC ✓", "VRD ✓",
+    "SOPORTE DE RESIDENCIA ✓", "FORMACIÓN ✓", "SEGUIMIENTO REMISION ✓",
+    "AUTOPOSTULACIÓN ✓", "ENCUESTA ✓", "MITIGACIÓN EN STC ✓",
+]
+
+def cargar_matriz_documental() -> pd.DataFrame:
+    df, _ = cargar_fuente("matriz_documental")
+    df["cedula_norm"] = df["CÉDULA"].apply(normalizar_cedula)
+    df["% CUMPLIMIENTO_num"] = (
+        df["% CUMPLIMIENTO"].astype(str).str.replace("%", "", regex=False).str.strip()
+    )
+    df["% CUMPLIMIENTO_num"] = pd.to_numeric(df["% CUMPLIMIENTO_num"], errors="coerce")
+    return df
+
+
+def resumen_cumplimiento_documental(matriz: pd.DataFrame) -> dict:
+    total = len(matriz)
+    completos = (matriz["% CUMPLIMIENTO_num"] == 100).sum()
+    incompletos = total - completos
+    promedio = round(matriz["% CUMPLIMIENTO_num"].mean(), 1) if total else 0
+
+    distribucion = matriz["% CUMPLIMIENTO_num"].value_counts().sort_index().reset_index()
+    distribucion.columns = ["% Cumplimiento", "Cantidad"]
+
+    return {
+        "total": total, "completos": completos, "incompletos": incompletos,
+        "promedio": promedio, "distribucion": distribucion,
+    }
+
+
+def resumen_estado_remision(matriz: pd.DataFrame) -> pd.DataFrame:
+    conteo = matriz["CONTROL DE REMISIÓN"].value_counts(dropna=False).reset_index()
+    conteo.columns = ["Estado", "Cantidad"]
+    conteo["Estado"] = conteo["Estado"].fillna("Sin estado registrado")
+    return conteo
+
+
+def lista_pendientes_por_responsable(matriz: pd.DataFrame) -> pd.DataFrame:
+    tiene_observacion = matriz["OBSERVACIÓN GENERAL"].notna() & (matriz["OBSERVACIÓN GENERAL"].astype(str).str.strip() != "")
+    pendientes = matriz[tiene_observacion].copy()
+
+    def extraer_correo(texto):
+        import re
+        match = re.search(r"[\w\.-]+@[\w\.-]+", str(texto))
+        return match.group(0) if match else "Sin correo identificado"
+
+    pendientes["Responsable (correo)"] = pendientes["OBSERVACIÓN GENERAL"].apply(extraer_correo)
+    columnas = ["CÉDULA", "NOMBRE COMPLETO", "PAQUETE", "% CUMPLIMIENTO", "CONTROL DE REMISIÓN", "OBSERVACIÓN GENERAL", "Responsable (correo)"]
+    return pendientes[columnas].sort_values("Responsable (correo)")
+
+
+def detectar_inconsistencias_documentales(matriz: pd.DataFrame) -> pd.DataFrame:
+    """100% de cumplimiento pero con observación general pendiente = contradicción."""
+    tiene_observacion = matriz["OBSERVACIÓN GENERAL"].notna() & (matriz["OBSERVACIÓN GENERAL"].astype(str).str.strip() != "")
+    es_100 = matriz["% CUMPLIMIENTO_num"] == 100
+    inconsistentes = matriz[tiene_observacion & es_100].copy()
+    columnas = ["CÉDULA", "NOMBRE COMPLETO", "PAQUETE", "% CUMPLIMIENTO", "CONTROL DE REMISIÓN", "OBSERVACIÓN GENERAL"]
+    return inconsistentes[columnas]
+
+
+def buscar_persona_matriz(matriz: pd.DataFrame, cedula_norm: str) -> pd.DataFrame:
+    return matriz[matriz["cedula_norm"] == cedula_norm]

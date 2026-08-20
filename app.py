@@ -83,8 +83,8 @@ with carga_personalizada("Calculando proyección de avance..."):
 
 st.markdown(html_franja_prediccion(pred), unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "🔍 Consulta por CC", "📄 Compilador FCS", "⏰ Alertas por tiempos", "📊 Overview", "🌐 Dashboard Proyecto",
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    "🔍 Consulta por CC", "📄 Compilador FCS", "⏰ Alertas por tiempos", "📊 Overview", "🌐 Dashboard Proyecto", "📋 Evidencias SDDE",
 ])
 
 # =========================================================
@@ -525,3 +525,60 @@ with tab5:
         height=800,
         scrolling=True,
     )
+
+# =========================================================
+# TAB 6: Gestión Documental / Evidencias SDDE
+# =========================================================
+with tab6:
+    from analitica import (
+        cargar_matriz_documental, resumen_cumplimiento_documental, resumen_estado_remision,
+        lista_pendientes_por_responsable, detectar_inconsistencias_documentales, buscar_persona_matriz,
+    )
+
+    with carga_personalizada("Cargando matriz documental..."):
+        matriz = cargar_matriz_documental()
+
+    st.subheader("Evidencias documentales para entrega a SDDE")
+
+    with st.expander("📊 Resumen de cumplimiento", expanded=True):
+        resumen_doc = resumen_cumplimiento_documental(matriz)
+        c1, c2, c3, c4 = st.columns(4)
+        with c1: tarjeta(resumen_doc["total"], "Total registros", "#656A71")
+        with c2: tarjeta(resumen_doc["completos"], "100% completos", "#1E8E3E")
+        with c3: tarjeta(resumen_doc["incompletos"], "Con pendientes", "#821F0D")
+        with c4: tarjeta(f"{resumen_doc['promedio']}%", "Promedio cumplimiento", "#FD531E")
+
+        fig_dist = px.bar(resumen_doc["distribucion"], x="% Cumplimiento", y="Cantidad", text="Cantidad")
+        fig_dist.update_traces(marker_color="#FD531E", textposition="outside")
+        fig_dist.update_layout(height=350)
+        st.plotly_chart(fig_dist, use_container_width=True)
+
+    with st.expander("📦 Estado de remisión al gestor", expanded=False):
+        estado_remision = resumen_estado_remision(matriz)
+        fig_estado = px.bar(estado_remision, x="Estado", y="Cantidad", text="Cantidad")
+        fig_estado.update_traces(marker_color="#292929", textposition="outside")
+        fig_estado.update_layout(height=350)
+        st.plotly_chart(fig_estado, use_container_width=True)
+        st.dataframe(estado_remision, use_container_width=True, hide_index=True)
+
+    with st.expander("⚠️ Lista de pendientes por responsable", expanded=False):
+        pendientes = lista_pendientes_por_responsable(matriz)
+        st.write(f"**{len(pendientes)} personas con observaciones pendientes**")
+        st.dataframe(pendientes, use_container_width=True)
+        csv_pendientes = pendientes.to_csv(index=False, encoding="utf-8-sig")
+        st.download_button("⬇️ Descargar pendientes (CSV)", csv_pendientes, "pendientes_documentales.csv", "text/csv")
+
+    with st.expander("🔴 Inconsistencias (100% pero con observación pendiente)", expanded=False):
+        inconsistencias_doc = detectar_inconsistencias_documentales(matriz)
+        st.write(f"**{len(inconsistencias_doc)} casos encontrados**")
+        if len(inconsistencias_doc) > 0:
+            st.dataframe(inconsistencias_doc, use_container_width=True)
+        else:
+            st.success("No se encontraron inconsistencias de este tipo.")
+
+    with st.expander("🔍 Consulta por cédula", expanded=False):
+        cc_matriz = st.text_input("Buscar por CC (parcial o completo)", key="cc_matriz_doc")
+        if cc_matriz:
+            resultado_matriz = matriz[matriz["cedula_norm"].str.contains(cc_matriz, na=False)]
+            st.write(f"**{len(resultado_matriz)} personas encontradas**")
+            st.dataframe(resultado_matriz.drop(columns=["cedula_norm", "% CUMPLIMIENTO_num"]), use_container_width=True)
