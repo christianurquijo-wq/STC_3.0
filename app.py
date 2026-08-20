@@ -532,7 +532,7 @@ with tab5:
 with tab6:
     from analitica import (
         cargar_matriz_documental, resumen_cumplimiento_documental, resumen_estado_remision,
-        lista_pendientes_por_responsable, detectar_inconsistencias_documentales, buscar_persona_matriz,
+        lista_pendientes_por_responsable, detectar_inconsistencias_documentales, buscar_persona_matriz, COLUMNAS_REQUISITOS
     )
 
     with carga_personalizada("Cargando matriz documental..."):
