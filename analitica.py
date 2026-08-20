@@ -644,3 +644,20 @@ def detectar_inconsistencias_documentales(matriz: pd.DataFrame) -> pd.DataFrame:
 
 def buscar_persona_matriz(matriz: pd.DataFrame, cedula_norm: str) -> pd.DataFrame:
     return matriz[matriz["cedula_norm"] == cedula_norm]
+
+def cargar_matriz_documental_con_filas():
+    """Igual que cargar_matriz_documental pero conserva la fila real de la hoja para poder escribir."""
+    df, fila_header = cargar_fuente("matriz_documental")
+    df["cedula_norm"] = df["CÉDULA"].apply(normalizar_cedula)
+    df["% CUMPLIMIENTO_num"] = pd.to_numeric(
+        df["% CUMPLIMIENTO"].astype(str).str.replace("%", "", regex=False).str.strip(), errors="coerce"
+    )
+    df["fila_sheet"] = fila_header + 2 + df.index  # fila real 1-indexed en Google Sheets
+    return df
+
+
+def filtrar_por_documento_y_estado(matriz: pd.DataFrame, columna_documento: str, estado: str = None) -> pd.DataFrame:
+    resultado = matriz.copy()
+    if estado and estado != "Todos":
+        resultado = resultado[resultado[columna_documento].astype(str).str.strip() == estado]
+    return resultado

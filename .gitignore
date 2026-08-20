@@ -2,6 +2,7 @@
 __pycache__/
 *.pyc
 .streamlit/secrets.toml
+.streamlit/service_account.json
 *.csv
 columnas_debug.txt
 debug_entregas.txt

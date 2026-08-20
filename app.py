@@ -553,6 +553,40 @@ with tab6:
         fig_dist.update_layout(height=350)
         st.plotly_chart(fig_dist, use_container_width=True)
 
+    with st.expander("📤 Marcar documentos cargados", expanded=False):
+        from analitica import cargar_matriz_documental_con_filas, filtrar_por_documento_y_estado
+        from sheets_write import marcar_documento_cargado
+        from config import FUENTES
+
+        matriz_editable = cargar_matriz_documental_con_filas()
+
+        doc_seleccionado = st.selectbox("Documento a cargar", COLUMNAS_REQUISITOS, key="doc_a_cargar")
+        estados_disponibles = ["Todos"] + sorted(matriz_editable[doc_seleccionado].dropna().unique().tolist())
+        estado_seleccionado = st.selectbox("Estado", estados_disponibles, key="estado_doc")
+
+        filtrado_doc = filtrar_por_documento_y_estado(matriz_editable, doc_seleccionado, estado_seleccionado)
+        st.write(f"**{len(filtrado_doc)} personas encontradas**")
+
+        columna_indice = matriz_editable.columns.get_loc(doc_seleccionado)
+        spreadsheet_id = FUENTES["matriz_documental"]["id"]
+
+        for _, fila in filtrado_doc.iterrows():
+            c1, c2, c3, c4 = st.columns([2, 3, 2, 1])
+            with c1: st.write(fila["CÉDULA"])
+            with c2: st.write(fila["NOMBRE COMPLETO"])
+            with c3: st.write(f"Estado actual: {fila[doc_seleccionado]}")
+            with c4:
+                if st.button("✅ Marcar TRUE", key=f"marcar_{fila['CÉDULA']}_{doc_seleccionado}"):
+                    exito, mensaje = marcar_documento_cargado(
+                        spreadsheet_id, "MATRIZ DOCUMENTAL", int(fila["fila_sheet"]), columna_indice
+                    )
+                    if exito:
+                        st.success(mensaje)
+                        st.cache_data.clear()
+                        st.rerun()
+                    else:
+                        st.error(mensaje)
+
     with st.expander("📦 Estado de remisión al gestor", expanded=False):
         estado_remision = resumen_estado_remision(matriz)
         fig_estado = px.bar(estado_remision, x="Estado", y="Cantidad", text="Cantidad")
