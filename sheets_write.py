@@ -30,16 +30,17 @@ def _columna_a_letra(indice_0based: int) -> str:
     return letra
 
 
-def marcar_documento_cargado(spreadsheet_id: str, sheet_title: str, fila_sheet: int, columna_indice: int) -> tuple:
-    """Escribe TRUE en la celda [fila_sheet, columna_indice] (columna_indice 0-based)."""
+def marcar_documento_cargado(spreadsheet_id: str, sheet_title: str, fila_sheet: int, columna_indice: int, valor: bool) -> tuple:
+    """Escribe un valor booleano real (mantiene el checkbox) en la celda [fila_sheet, columna_indice]."""
     try:
         service = _service_escritura()
         letra = _columna_a_letra(columna_indice)
         rango = f"'{sheet_title}'!{letra}{fila_sheet}"
         service.spreadsheets().values().update(
             spreadsheetId=spreadsheet_id, range=rango,
-            valueInputOption="RAW", body={"values": [["TRUE"]]},
+            valueInputOption="RAW", body={"values": [[valor]]},
         ).execute()
-        return True, "Documento marcado como cargado."
+        estado_texto = "marcado" if valor else "desmarcado"
+        return True, f"Documento {estado_texto} correctamente."
     except Exception as e:
         return False, f"Error al escribir: {e}"

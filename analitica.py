@@ -662,3 +662,6 @@ def filtrar_por_documento_y_estado(matriz: pd.DataFrame, columna_documento: str,
     if estado and estado != "Todos":
         resultado = resultado[resultado[columna_documento].astype(str).str.strip() == estado]
     return resultado
+
+def es_valor_verdadero(valor) -> bool:
+    return str(valor).strip().upper() in ("TRUE", "VERDADERO", "SI", "SÍ", "1")

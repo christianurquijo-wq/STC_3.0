@@ -570,15 +570,22 @@ with tab6:
         columna_indice = matriz_editable.columns.get_loc(doc_seleccionado)
         spreadsheet_id = FUENTES["matriz_documental"]["id"]
 
+        from analitica import es_valor_verdadero
+
         for _, fila in filtrado_doc.iterrows():
             c1, c2, c3, c4 = st.columns([2, 3, 2, 1])
             with c1: st.write(fila["CÉDULA"])
             with c2: st.write(fila["NOMBRE COMPLETO"])
             with c3: st.write(f"Estado actual: {fila[doc_seleccionado]}")
+
+            esta_marcado = es_valor_verdadero(fila[doc_seleccionado])
+            valor_destino = not esta_marcado
+            etiqueta_boton = "❌ Marcar FALSE" if esta_marcado else "✅ Marcar TRUE"
+
             with c4:
-                if st.button("✅ Marcar TRUE", key=f"marcar_{fila['fila_sheet']}_{doc_seleccionado}"):
+                if st.button(etiqueta_boton, key=f"marcar_{fila['fila_sheet']}_{doc_seleccionado}"):
                     exito, mensaje = marcar_documento_cargado(
-                        spreadsheet_id, "MATRIZ DOCUMENTAL", int(fila["fila_sheet"]), columna_indice
+                        spreadsheet_id, "MATRIZ DOCUMENTAL", int(fila["fila_sheet"]), columna_indice, valor_destino
                     )
                     if exito:
                         st.success(mensaje)
