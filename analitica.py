@@ -684,3 +684,9 @@ def tabla_editable_documentos(matriz: pd.DataFrame) -> pd.DataFrame:
     for col in COLUMNAS_REQUISITOS:
         df[col.replace(" ✓", "")] = matriz[col].apply(es_valor_verdadero)
     return df.reset_index(drop=True)
+
+def datos_formacion_apilada(general: pd.DataFrame) -> pd.DataFrame:
+    estado_form = general["Estado de la formación"].astype(str).str.strip().str.upper()
+    conteo = estado_form[estado_form.isin(["FINALIZADO", "CERTIFICADO", "EN CURSO"])].value_counts()
+    df = pd.DataFrame([{"Formación": "Formación", "Estado": estado, "Cantidad": int(cant)} for estado, cant in conteo.items()])
+    return df

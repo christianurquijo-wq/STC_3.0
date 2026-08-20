@@ -400,6 +400,16 @@ with tab4:
         with c2: tarjeta(r["finalizados_formacion"], "Finalizados", "#656A71")
         with c3: tarjeta(f"{r['avance_general_formacion']}%", "Avance a la fecha", "#FD531E", progreso=r['avance_general_formacion'])
 
+        from analitica import datos_formacion_apilada
+        datos_form_apilada = datos_formacion_apilada(general_filtrado)
+        fig_form_apilada = px.bar(
+            datos_form_apilada, x="Formación", y="Cantidad", color="Estado", text="Cantidad",
+            color_discrete_map={"FINALIZADO": "#1E8E3E", "CERTIFICADO": "#FD531E", "EN CURSO": "#656A71"},
+            barmode="stack",
+        )
+        fig_form_apilada.update_layout(height=300, showlegend=True)
+        st.plotly_chart(fig_form_apilada, use_container_width=True)
+
         st.markdown("#### Entregas")
         c1, c2 = st.columns(2)
         with c1: tarjeta(r["cantidad_entregados"], "Cantidad entregados", "#656A71")
