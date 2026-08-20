@@ -658,6 +658,7 @@ def cargar_matriz_documental_con_filas():
 
 def filtrar_por_documento_y_estado(matriz: pd.DataFrame, columna_documento: str, estado: str = None) -> pd.DataFrame:
     resultado = matriz.copy()
+    resultado = resultado[resultado["CÉDULA"].notna() & (resultado["CÉDULA"].astype(str).str.strip() != "")]
     if estado and estado != "Todos":
         resultado = resultado[resultado[columna_documento].astype(str).str.strip() == estado]
     return resultado

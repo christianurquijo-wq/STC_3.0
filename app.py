@@ -576,7 +576,7 @@ with tab6:
             with c2: st.write(fila["NOMBRE COMPLETO"])
             with c3: st.write(f"Estado actual: {fila[doc_seleccionado]}")
             with c4:
-                if st.button("✅ Marcar TRUE", key=f"marcar_{fila['CÉDULA']}_{doc_seleccionado}"):
+                if st.button("✅ Marcar TRUE", key=f"marcar_{fila['fila_sheet']}_{doc_seleccionado}"):
                     exito, mensaje = marcar_documento_cargado(
                         spreadsheet_id, "MATRIZ DOCUMENTAL", int(fila["fila_sheet"]), columna_indice
                     )
