@@ -560,11 +560,18 @@ with tab6:
 
         matriz_editable = cargar_matriz_documental_con_filas()
 
-        doc_seleccionado = st.selectbox("Documento a cargar", COLUMNAS_REQUISITOS, key="doc_a_cargar")
-        estados_disponibles = ["Todos"] + sorted(matriz_editable[doc_seleccionado].dropna().unique().tolist())
-        estado_seleccionado = st.selectbox("Estado", estados_disponibles, key="estado_doc")
+        fc1, fc2, fc3 = st.columns(3)
+        with fc1:
+            doc_seleccionado = st.selectbox("Documento a cargar", COLUMNAS_REQUISITOS, key="doc_a_cargar")
+        with fc2:
+            estados_disponibles = ["Todos"] + sorted(matriz_editable[doc_seleccionado].dropna().unique().tolist())
+            estado_seleccionado = st.selectbox("Estado", estados_disponibles, key="estado_doc")
+        with fc3:
+            cc_filtro_marcar = st.text_input("Buscar por CC (parcial o completo)", key="cc_marcar_doc")
 
         filtrado_doc = filtrar_por_documento_y_estado(matriz_editable, doc_seleccionado, estado_seleccionado)
+        if cc_filtro_marcar:
+            filtrado_doc = filtrado_doc[filtrado_doc["cedula_norm"].str.contains(cc_filtro_marcar, na=False)]
         st.write(f"**{len(filtrado_doc)} personas encontradas**")
 
         columna_indice = matriz_editable.columns.get_loc(doc_seleccionado)
