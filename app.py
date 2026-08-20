@@ -554,7 +554,7 @@ with tab6:
         datos_grafica = datos_grafica_documentos(matriz_editable)
         fig_docs = px.bar(
             datos_grafica, x="Documento", y="Cantidad", color="Estado",
-            color_discrete_map={"Cargado": "#1E8E3E", "No cargado": "#821F0D"},
+            color_discrete_map={"Cargado": "#1280b0", "No cargado": "#c32e13"},
             barmode="stack", text="Cantidad",
         )
         fig_docs.update_layout(height=450, xaxis_tickangle=-30)
