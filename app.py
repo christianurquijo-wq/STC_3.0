@@ -260,6 +260,12 @@ with tab3:
 
     st.subheader("📝 Subsanaciones pendientes (Orientación)")
 
+    conteo_orientador = subsanaciones["Orientador/a"].value_counts().reset_index()
+    conteo_orientador.columns = ["Orientador/a", "Cantidad"]
+    st.dataframe(conteo_orientador, use_container_width=True, hide_index=True)
+
+    st.divider()
+
     col_sub1, col_sub2 = st.columns(2)
     with col_sub1:
         orientadores_sub = ["Todos"] + sorted(subsanaciones["Orientador/a"].dropna().unique().tolist())
