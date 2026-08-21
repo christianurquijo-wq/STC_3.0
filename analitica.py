@@ -17,15 +17,23 @@ def _set_cedulas(df: pd.DataFrame, columna: str) -> set:
     return set(df[columna].apply(normalizar_cedula).dropna())
 
 def cargar_todo():
-    nombres = ["general", "verificacion", "formacion", "orientacion_consolidado",
-               "remisiones", "encuesta_basico_jco", "encuesta_especializado"]
+    from bigquery_api import cargar_general_bigquery
+
+    nombres_sheets = ["verificacion", "formacion", "orientacion_consolidado",
+                       "remisiones", "encuesta_basico_jco", "encuesta_especializado"]
     fuentes = {}
-    with ThreadPoolExecutor(max_workers=7) as executor:
-        futuros = {executor.submit(cargar_fuente, nombre): nombre for nombre in nombres}
+
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        futuros = {executor.submit(cargar_fuente, nombre): nombre for nombre in nombres_sheets}
+        futuro_bq = executor.submit(cargar_general_bigquery)
+
         for futuro in as_completed(futuros):
             nombre = futuros[futuro]
             df, _ = futuro.result()
             fuentes[nombre] = df
+
+        fuentes["general"] = futuro_bq.result()
+
     return fuentes
 
 @st.cache_data(ttl=600)
