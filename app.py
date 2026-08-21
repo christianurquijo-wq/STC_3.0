@@ -12,7 +12,8 @@ from analitica import serie_orientacion_filtrada
 
 @st.cache_data(ttl=600)
 def cargar_general():
-    df, _ = cargar_fuente("general")
+    from bigquery_api import cargar_general_bigquery
+    df = cargar_general_bigquery()
     df = normalizar_columna_cedula(df, MAPEO_CEDULA["general"])
     return df
 
