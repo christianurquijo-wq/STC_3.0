@@ -153,7 +153,8 @@ from column_mapping import (
 import datetime
 
 def cargar_metas() -> pd.DataFrame:
-    df, _ = cargar_fuente("parametros")
+    from bigquery_api import cargar_metas_bigquery
+    df = cargar_metas_bigquery()
     for col in ["Básico", "Especializado", "Total"]:
         df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
     return df

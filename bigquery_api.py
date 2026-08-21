@@ -66,3 +66,13 @@ def cargar_general_bigquery() -> pd.DataFrame:
 
     df = df.rename(columns=mapeo_columnas)
     return df
+
+TABLA_METAS = "sustained-edge-465417-m3.EFE_2026.METAS_STC_3"
+
+def cargar_metas_bigquery() -> pd.DataFrame:
+    """Carga la tabla de Metas mensuales desde BigQuery."""
+    client = _get_client()
+    query = f"SELECT * FROM `{TABLA_METAS}`"
+    df = client.query(query).to_dataframe()
+    df = df.rename(columns={"Basico": "Básico"})  # el resto del código sigue esperando "Básico" con tilde
+    return df
