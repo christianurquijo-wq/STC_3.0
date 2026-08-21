@@ -57,6 +57,11 @@ def cargar_general_bigquery() -> pd.DataFrame:
         "momento_del_proceso_back_up": "Momento del proceso (Back UP)",
         "resultado_del_vrd": "Resultado del VRD",
         "hito": "Hito",
+        "sin_gestion": "Sin gestión",
+        "en_verificacion": "En verificación",
+        "verificado": "Verificado",
+        "orientado": "Orientado",
+        "formado": "Formado",
     }
 
     df = df.rename(columns=mapeo_columnas)
