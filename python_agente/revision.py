@@ -14,7 +14,7 @@ from typing import List, Optional
 
 import agente
 from catalogo import OBSERVACIONES_INTERNAS, obtener_observacion
-from config import AREA_SUGERIDA_POR_CATEGORIA, CAMPOS_PLATAFORMA, DICCIONARIO, IGNORAR
+from agente_config import AREA_SUGERIDA_POR_CATEGORIA, CAMPOS_PLATAFORMA, DICCIONARIO, IGNORAR
 from consumo import registrar_consumo_de_corrida, verificar_techo_tokens_mensual
 from fcs import cargar_fcs
 from google_clients import descargar_bytes_archivo, listar_archivos, listar_subcarpetas, obtener_o_crear_hoja

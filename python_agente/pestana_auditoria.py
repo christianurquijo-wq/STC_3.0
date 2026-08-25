@@ -19,7 +19,7 @@ los necesitas desde ahí mismo, sin cambiar de pestaña.
 import pandas as pd
 import streamlit as st
 
-from config import CAMPOS_PLATAFORMA, CONFIG
+from agente_config import CAMPOS_PLATAFORMA, CONFIG
 from google_clients import (
     obtener_cliente_sheets, obtener_credenciales, obtener_o_crear_hoja, obtener_servicio_drive,
 )

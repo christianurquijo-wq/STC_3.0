@@ -96,12 +96,17 @@ Esto es un ejemplo mínimo — para integrarlo a tu app de Streamlit ya
 existente en el Codespace, copia el `import revision` + el botón + el manejo
 del resultado a donde tenga sentido en tu UI actual.
 
-## 7. Ajustar `config.py`
+## 7. Ajustar `agente_config.py`
 
-Los valores por defecto en `config.py` son los mismos que ya tenías en
+Los valores por defecto en `agente_config.py` son los mismos que ya tenías en
 `Config.gs` (misma carpeta raíz, mismo modelo, mismos techos de tokens).
 Ajusta ahí si necesitas cambiar algo — es el único archivo que deberías tocar
 para un ajuste normal de uso, igual que antes.
+
+**Nota:** el archivo se llama `agente_config.py` (no `config.py` a secas) a
+propósito — si integras esta carpeta dentro de otra app de Streamlit que ya
+tenga su propio `config.py`, evita que los dos se pisen entre sí por el orden
+de `sys.path`.
 
 ## Notas de costo / infraestructura (Datágil)
 

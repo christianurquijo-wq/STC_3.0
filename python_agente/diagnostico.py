@@ -18,7 +18,7 @@ except ImportError:
     pass
 
 import agente
-from config import CONFIG
+from agente_config import CONFIG
 from google_clients import (
     descargar_bytes_archivo, listar_archivos, listar_subcarpetas,
     obtener_credenciales, obtener_cliente_sheets, obtener_servicio_drive,
@@ -67,7 +67,7 @@ def main():
     ]:
         print(f'   - {etiqueta}…', end=' ')
         if not sid:
-            print('SIN CONFIGURAR (revisa config.py / la variable de entorno REPORT_SPREADSHEET_ID)')
+            print('SIN CONFIGURAR (revisa agente_config.py / la variable de entorno REPORT_SPREADSHEET_ID)')
             continue
         try:
             gc.open_by_key(sid)

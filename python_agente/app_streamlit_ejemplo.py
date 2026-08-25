@@ -18,7 +18,7 @@ try:
 except ImportError:
     pass
 
-from config import CONFIG
+from agente_config import CONFIG
 from google_clients import obtener_credenciales, obtener_cliente_sheets, obtener_servicio_drive
 import revision
 
