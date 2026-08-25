@@ -31,7 +31,6 @@ def _columna_a_letra(indice_0based: int) -> str:
 
 
 def marcar_documento_cargado(spreadsheet_id: str, sheet_title: str, fila_sheet: int, columna_indice: int, valor: bool) -> tuple:
-    """Escribe un valor booleano real (mantiene el checkbox) en la celda [fila_sheet, columna_indice]."""
     try:
         service = _service_escritura()
         letra = _columna_a_letra(columna_indice)

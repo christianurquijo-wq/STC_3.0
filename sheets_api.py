@@ -23,7 +23,6 @@ def _get_service():
     return _local.service
 
 def _con_reintentos(func, intentos=3, espera_base=2):
-    """Reintenta una llamada a la API hasta 3 veces si falla por red, con espera creciente."""
     ultimo_error = None
     for intento in range(1, intentos + 1):
         try:

@@ -1,7 +1,6 @@
 # explorar_valores.py
 from cargar_datos import cargar_fuente
 
-# Columnas de estado clave a inspeccionar por fuente
 COLUMNAS_A_REVISAR = {
     "general": ["Momento del proceso", "Reporte", "Sin gestión", "En verificación",
                 "Verificado", "Orientado", "Formado", "Paquete",

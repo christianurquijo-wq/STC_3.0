@@ -9,7 +9,6 @@ from column_mapping import (
 )
 
 def cargar_todo_normalizado():
-    """Carga las 5 fuentes y las indexa por cédula normalizada."""
     fuentes = {}
     for nombre, columna in MAPEO_CEDULA.items():
         df, _ = cargar_fuente(nombre)
@@ -18,7 +17,6 @@ def cargar_todo_normalizado():
     return fuentes
 
 def construir_lookup(df: pd.DataFrame) -> dict:
-    """Indexa un DataFrame por cedula_norm -> lista de filas (puede haber duplicados)."""
     lookup = {}
     for _, fila in df.iterrows():
         ced = fila["cedula_norm"]
@@ -86,7 +84,6 @@ if __name__ == "__main__":
     df_errores = auditar()
     print(f"\nTotal de inconsistencias encontradas: {len(df_errores)}\n")
     print(df_errores["tipo_error"].value_counts())
-    # Vista rápida de los 13 casos de JCO inconsistente, para revisión manual directa
     inconsistentes = df_errores[df_errores["tipo_error"] == "JCO_INCONSISTENTE"]
     if len(inconsistentes) > 0:
         print("\n--- Casos JCO_INCONSISTENTE (revisar manualmente) ---")

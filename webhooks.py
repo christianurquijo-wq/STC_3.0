@@ -14,7 +14,6 @@ def _obtener_secreto(nombre_env: str):
 
 
 def disparar_webhook(url_env: str, header_nombre_env: str = None, header_valor_env: str = None) -> tuple:
-    """Dispara un webhook de n8n. Retorna (exito: bool, mensaje: str)."""
     url = _obtener_secreto(url_env)
     if not url:
         return False, f"Falta configurar {url_env} en las variables de entorno/secrets."

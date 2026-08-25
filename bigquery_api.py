@@ -74,5 +74,5 @@ def cargar_metas_bigquery() -> pd.DataFrame:
     client = _get_client()
     query = f"SELECT * FROM `{TABLA_METAS}`"
     df = client.query(query).to_dataframe()
-    df = df.rename(columns={"Basico": "Básico"})  # el resto del código sigue esperando "Básico" con tilde
+    df = df.rename(columns={"Basico": "Básico"}) 
     return df

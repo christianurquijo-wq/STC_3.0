@@ -10,9 +10,9 @@ def normalizar_cedula(valor) -> str | None:
     if pd.isna(valor):
         return None
     texto = str(valor).strip()
-    texto = re.sub(r"\.0$", "", texto)          # quita ".0" si vino como float
-    solo_digitos = re.sub(r"\D", "", texto)      # deja solo dígitos
-    if len(solo_digitos) < 6:                    # menos de 6 dígitos no es cédula válida
+    texto = re.sub(r"\.0$", "", texto)          
+    solo_digitos = re.sub(r"\D", "", texto)     
+    if len(solo_digitos) < 6:                   
         return None
     return solo_digitos
 
