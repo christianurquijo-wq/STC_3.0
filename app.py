@@ -9,6 +9,15 @@ from cargar_datos import cargar_fuente
 from normalizador import normalizar_columna_cedula
 from column_mapping import CAMPO_ENTREGADO, MAPEO_CEDULA
 from analitica import serie_orientacion_filtrada
+import sys, os
+_RUTA_PYTHON_AGENTE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "python_agente")
+sys.path.insert(0, _RUTA_PYTHON_AGENTE)
+try:
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(_RUTA_PYTHON_AGENTE, ".env"))
+except ImportError:
+    pass
+import pestana_auditoria
 
 @st.cache_data(ttl=600)
 def cargar_general():
@@ -85,8 +94,8 @@ with carga_personalizada("Calculando proyección de avance..."):
 
 st.markdown(html_franja_prediccion(pred), unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-    "🔍 Consulta por CC", "📄 Compilador FCS", "⏰ Alertas por tiempos", "📊 Overview", "🌐 Dashboard Proyecto", "📋 Evidencias SDDE",
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+    "🔍 Consulta por CC", "📄 Compilador FCS", "⏰ Alertas por tiempos", "📊 Overview", "🌐 Dashboard Proyecto", "📋 Evidencias SDDE", "🔎 Auditoría de calidad",
 ])
 
 # =========================================================
@@ -705,3 +714,9 @@ with tab6:
             st.dataframe(inconsistencias_doc, use_container_width=True)
         else:
             st.success("No se encontraron inconsistencias de este tipo.")
+
+# =========================================================
+# TAB 7: Auditoría de calidad (agente IA)
+# =========================================================
+with tab7:
+    pestana_auditoria.render()
