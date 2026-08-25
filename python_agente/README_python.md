@@ -108,6 +108,33 @@ propósito — si integras esta carpeta dentro de otra app de Streamlit que ya
 tenga su propio `config.py`, evita que los dos se pisen entre sí por el orden
 de `sys.path`.
 
+## Diccionario de siglas y sugerencias con IA
+
+El mapeo de nombre de archivo -> campo oficial (`CC` -> documento de
+identidad, `DJ` -> declaración juramentada, etc.) ya no vive fijo en
+`agente_config.py` — vive en una pestaña **"Diccionario"** del mismo Sheet
+de reporte, para poder ampliarlo sin tocar código ni hacer un deploy. Se
+crea y se siembra sola (con lo que antes vivía en `agente_config.py`) la
+primera vez que corre una revisión, o la primera vez que se usa el barrido
+de Drive de abajo.
+
+Desde la pestaña "🔍 Auditoría de calidad" en Streamlit, expander **"🧾
+Diccionario de nombres de archivo (con ayuda de IA)"**:
+
+1. **Escanear Drive** — barrido completo de la carpeta raíz (no solo "En
+   ruta"), agrupa por nombre de archivo (sin cédula ni extensión) y muestra
+   cuáles todavía no calzan con el Diccionario.
+2. **Pedir sugerencia a Gemini** — una sola llamada de texto (no abre
+   ningún PDF, así que es barata) que propone a qué campo corresponde cada
+   nombre nuevo, con nivel de confianza y justificación.
+3. **Revisar y aprobar** — tabla editable donde confirmas/corriges cada
+   sugerencia antes de guardarla. Nada se escribe en el Diccionario sin
+   aprobación humana.
+
+Recomendado correr este barrido periódicamente (ej. mensual) para mantener
+el Diccionario al día conforme el equipo de campo varía cómo nombra los
+archivos.
+
 ## Notas de costo / infraestructura (Datágil)
 
 - Google Drive API / Sheets API: gratis, dentro de cuotas muy generosas para

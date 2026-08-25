@@ -12,6 +12,7 @@ def normalizar_nombre(nombre_archivo: str, numero_documento: str) -> str:
     """
     n = re.sub(r'\.pdf$', '', nombre_archivo, flags=re.IGNORECASE)
     n = re.sub(r'^\s*' + re.escape(numero_documento) + r'\s*', '', n)
+    n = quitar_acentos(n)  # antes faltaba: sin esto, "Autopostulación" perdía la Ó en vez de normalizarse a "AUTOPOSTULACION"
     n = n.upper()
     n = re.sub(r'[^A-Z0-9]', '', n)
     return n

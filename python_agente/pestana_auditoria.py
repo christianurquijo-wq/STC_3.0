@@ -179,3 +179,97 @@ def render():
             from consumo import estimar_consumo_mensual
             sh_consumo = obtener_o_crear_hoja(ss, CONFIG.NOMBRE_HOJA_CONSUMO)
             st.code(estimar_consumo_mensual(sh_consumo, CONFIG), language=None)
+
+    with st.expander('🧾 Diccionario de nombres de archivo (con ayuda de IA)'):
+        st.caption(
+            'Barrido completo de Drive (no solo "En ruta") para detectar nombres de archivo que '
+            'el sistema todavía no reconoce, y sugerir con IA a qué campo oficial corresponde cada '
+            'uno. Nada se aplica solo — cada fila se revisa y se aprueba a mano antes de agregarse '
+            'a la pestaña "Diccionario" del Sheet de reporte.'
+        )
+
+        if st.button('🔍 1. Escanear Drive y detectar nombres nuevos', key='dicc_escanear'):
+            import diccionario as diccionario_mod
+            import sugerencias_diccionario as sug_mod
+            with st.spinner('Recorriendo Drive completo — puede tardar varios minutos si hay muchos archivos…'):
+                try:
+                    drive_service = obtener_servicio_drive(credenciales)
+                    dicc_actual, ignorar_actual = diccionario_mod.cargar_diccionario(ss)
+                    glosario = sug_mod.escanear_glosario_drive(drive_service, CONFIG.ROOT_FOLDER_ID)
+                    nuevos = sug_mod.filtrar_nombres_nuevos(glosario, dicc_actual, ignorar_actual)
+                except Exception as e:
+                    st.error(f'Falló el escaneo: {e}')
+                else:
+                    st.session_state['dicc_nombres_nuevos'] = nuevos
+                    st.session_state['dicc_actual'] = dicc_actual
+                    st.session_state.pop('dicc_sugerencias', None)
+                    st.success(f'{len(glosario)} nombres únicos encontrados en Drive — {len(nuevos)} todavía sin reconocer.')
+
+        nombres_nuevos = st.session_state.get('dicc_nombres_nuevos')
+        if nombres_nuevos:
+            st.write(f'**{len(nombres_nuevos)} nombres sin reconocer** (de mayor a menor frecuencia):')
+            st.dataframe(
+                pd.DataFrame(sorted(nombres_nuevos, key=lambda x: -x['cantidad'])),
+                use_container_width=True, hide_index=True,
+            )
+
+            if st.button('🤖 2. Pedir sugerencia de mapeo a Gemini', key='dicc_sugerir'):
+                import agente
+                import sugerencias_diccionario as sug_mod
+                with st.spinner('Consultando al agente IA (una sola llamada, sin abrir PDFs)…'):
+                    try:
+                        client = agente.obtener_cliente_gemini()
+                        resultado = sug_mod.sugerir_mapeo_ia(
+                            client, nombres_nuevos, st.session_state.get('dicc_actual', {}), CONFIG,
+                        )
+                    except Exception as e:
+                        st.error(f'Falló la sugerencia: {e}')
+                    else:
+                        if resultado['error']:
+                            st.error(resultado['error'])
+                        else:
+                            st.session_state['dicc_sugerencias'] = resultado['sugerencias']
+                            st.success(f"{len(resultado['sugerencias'])} sugerencia(s) recibida(s) ({resultado['tokens_usados']} tokens usados).")
+
+        sugerencias = st.session_state.get('dicc_sugerencias')
+        if sugerencias:
+            st.write('**Revisa y aprueba** (las de confianza ALTA vienen pre-marcadas; edita campo/población si el agente se equivocó):')
+
+            df_sug = pd.DataFrame(sugerencias)
+            df_sug['aprobar'] = df_sug['confianza'] == 'ALTA'
+            df_sug = df_sug[['aprobar', 'alias', 'campo_sugerido', 'poblacion_sugerida', 'confianza', 'justificacion']]
+
+            df_editado = st.data_editor(
+                df_sug,
+                column_config={
+                    'aprobar': st.column_config.CheckboxColumn('Aprobar'),
+                    'campo_sugerido': st.column_config.SelectboxColumn(
+                        'Campo', options=CAMPOS_PLATAFORMA + ['IGNORAR', 'NO_RECONOCIDO'],
+                    ),
+                    'poblacion_sugerida': st.column_config.SelectboxColumn('Población', options=['', 'GENERAL', 'JCO']),
+                },
+                hide_index=True, use_container_width=True, key='dicc_editor',
+            )
+
+            if st.button('✅ 3. Aplicar aprobados al Diccionario', type='primary', key='dicc_aplicar'):
+                import diccionario as diccionario_mod
+                aprobados = df_editado[df_editado['aprobar'] & (df_editado['campo_sugerido'] != 'NO_RECONOCIDO')]
+                entradas = [
+                    {
+                        'alias': fila['alias'], 'campo': fila['campo_sugerido'],
+                        'poblacion': fila['poblacion_sugerida'], 'origen': 'Aprobado por IA + revisión humana',
+                    }
+                    for _, fila in aprobados.iterrows()
+                ]
+                if not entradas:
+                    st.warning('No hay filas marcadas para aprobar.')
+                else:
+                    try:
+                        diccionario_mod.agregar_entradas(ss, entradas)
+                    except Exception as e:
+                        st.error(f'Falló al escribir en el Diccionario: {e}')
+                    else:
+                        st.success(f'{len(entradas)} alias agregados a la pestaña "Diccionario" — la próxima corrida ya los reconoce.')
+                        st.session_state.pop('dicc_sugerencias', None)
+                        st.session_state.pop('dicc_nombres_nuevos', None)
+                        st.rerun()

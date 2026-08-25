@@ -79,6 +79,9 @@ def _preparar_fakes(monkeypatch):
     monkeypatch.setattr(revision, 'cargar_fcs', lambda gc, config, avisos=None: {})
     monkeypatch.setattr(revision, 'cargar_cedulas_en_ruta', lambda gc, config, avisos=None: {'1111111111', '3333333333', '4444444444'})
 
+    from agente_config import DICCIONARIO, IGNORAR
+    monkeypatch.setattr(revision.diccionario, 'cargar_diccionario', lambda ss, avisos=None: (dict(DICCIONARIO), set(IGNORAR)))
+
     llamadas = {'n': 0}
 
     def fake_evaluar_documento_con_agente(client, archivo_bytes, nombre_archivo, campo, numero_documento, datos_fcs, presupuesto_agente, config, sleep_fn):

@@ -13,8 +13,9 @@ from datetime import datetime
 from typing import List, Optional
 
 import agente
+import diccionario
 from catalogo import OBSERVACIONES_INTERNAS, obtener_observacion
-from agente_config import AREA_SUGERIDA_POR_CATEGORIA, CAMPOS_PLATAFORMA, DICCIONARIO, IGNORAR
+from agente_config import AREA_SUGERIDA_POR_CATEGORIA, CAMPOS_PLATAFORMA
 from consumo import registrar_consumo_de_corrida, verificar_techo_tokens_mensual
 from fcs import cargar_fcs
 from google_clients import descargar_bytes_archivo, listar_archivos, listar_subcarpetas, obtener_o_crear_hoja
@@ -43,6 +44,11 @@ def ejecutar_revision(config, drive_service, gc, client_gemini=None, sleep_fn=ti
     sh_resumen = obtener_o_crear_hoja(report_ss, config.NOMBRE_HOJA_RESUMEN)
     sh_hallazgos = obtener_o_crear_hoja(report_ss, config.NOMBRE_HOJA_HALLAZGOS)
     sh_consumo = obtener_o_crear_hoja(report_ss, config.NOMBRE_HOJA_CONSUMO)
+
+    # Diccionario de siglas -> campo: vive en la pestaña "Diccionario" del mismo Sheet
+    # (se crea y siembra sola la primera vez) en vez de fijo en agente_config.py, para
+    # poder ampliarlo sin tocar código — ver diccionario.py.
+    dicc, ignorar = diccionario.cargar_diccionario(report_ss, avisos)
 
     sh_resumen.clear()
     sh_hallazgos.clear()
@@ -117,6 +123,7 @@ def ejecutar_revision(config, drive_service, gc, client_gemini=None, sleep_fn=ti
             resultado = revisar_carpeta_participante(
                 drive_service, carpeta_participante['id'], numero_documento, nombre_mes, ahora,
                 fcs_por_documento, presupuesto_agente, config, client_gemini, sleep_fn,
+                dicc, ignorar,
             )
             filas_resumen.append(resultado['fila_resumen'])
             filas_hallazgos.extend(resultado['filas_hallazgos'])
@@ -173,6 +180,7 @@ def ejecutar_revision(config, drive_service, gc, client_gemini=None, sleep_fn=ti
 def revisar_carpeta_participante(
     drive_service, carpeta_id: str, numero_documento: str, nombre_mes: str, ahora: datetime,
     fcs_por_documento: dict, presupuesto_agente: dict, config, client_gemini, sleep_fn,
+    diccionario_actual: dict, ignorar_actual: set,
 ) -> dict:
     """Revisa una carpeta de participante y devuelve la fila de resumen + los hallazgos detectados."""
     presentes_por_campo = {c: [] for c in CAMPOS_PLATAFORMA}
@@ -185,10 +193,10 @@ def revisar_carpeta_participante(
         nombre_original = archivo['name']
         norm = normalizar_nombre(nombre_original, numero_documento)
 
-        if norm in IGNORAR:
+        if norm in ignorar_actual:
             continue
 
-        entrada = DICCIONARIO.get(norm)
+        entrada = diccionario_actual.get(norm)
         if not entrada:
             sin_clasificar.append(nombre_original)
             filas_hallazgos.append(fila_hallazgo(ahora, nombre_mes, numero_documento, '(sin clasificar)', OBSERVACIONES_INTERNAS['SIN_CLASIFICAR'], nombre_original))
