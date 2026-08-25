@@ -9,6 +9,7 @@ from cargar_datos import cargar_fuente
 from normalizador import normalizar_columna_cedula
 from column_mapping import CAMPO_ENTREGADO, MAPEO_CEDULA
 from analitica import serie_orientacion_filtrada
+# --- Auditoría de calidad (agente IA en Python) ---
 import sys, os
 _RUTA_PYTHON_AGENTE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "python_agente")
 sys.path.insert(0, _RUTA_PYTHON_AGENTE)
@@ -17,6 +18,14 @@ try:
     load_dotenv(os.path.join(_RUTA_PYTHON_AGENTE, ".env"))
 except ImportError:
     pass
+
+try:
+    for _clave in ("GEMINI_API_KEY", "GOOGLE_SERVICE_ACCOUNT_JSON", "GOOGLE_SERVICE_ACCOUNT_FILE", "REPORT_SPREADSHEET_ID"):
+        if _clave not in os.environ and _clave in st.secrets:
+            os.environ[_clave] = st.secrets[_clave]
+except Exception:
+    pass
+
 import pestana_auditoria
 
 @st.cache_data(ttl=600)
