@@ -97,11 +97,16 @@ with col_menu:
 
 from analitica import cargar_todo_cache, calcular_prediccion, html_franja_prediccion
 
-with carga_personalizada("Calculando proyección de avance..."):
-    f_prediccion = cargar_todo_cache()
-    pred = calcular_prediccion(f_prediccion["general"])
-
-st.markdown(html_franja_prediccion(pred), unsafe_allow_html=True)
+try:
+    with carga_personalizada("Calculando proyección de avance..."):
+        f_prediccion = cargar_todo_cache()
+        pred = calcular_prediccion(f_prediccion["general"])
+    st.markdown(html_franja_prediccion(pred), unsafe_allow_html=True)
+except Exception as e:
+    st.error("No se pudo cargar el resumen de avance (posible bache de red). Los demás tabs pueden seguir funcionando.")
+    if st.button("🔄 Reintentar carga de avance"):
+        st.cache_data.clear()
+        st.rerun()
 
 tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "🔍 Consulta por CC", "📄 Compilador FCS", "⏰ Alertas por tiempos", "📊 Overview", "🌐 Dashboard Proyecto", "📋 Evidencias SDDE", "🔎 Auditoría de calidad",
