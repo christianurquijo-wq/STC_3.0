@@ -62,6 +62,7 @@ def cargar_general_bigquery() -> pd.DataFrame:
         "verificado": "Verificado",
         "orientado": "Orientado",
         "formado": "Formado",
+        "paquete_de_pantallazos": "Paquete de pantallazos",
     }
 
     df = df.rename(columns=mapeo_columnas)

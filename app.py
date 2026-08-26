@@ -729,6 +729,98 @@ with tab6:
         else:
             st.success("No se encontraron inconsistencias de este tipo.")
 
+    st.divider()
+    st.subheader("📸 Estado de Pantallazos")
+
+    from analitica import cargar_todo_cache
+    with carga_personalizada("Cargando datos de pantallazos..."):
+        f_pantallazos = cargar_todo_cache()
+    general_pant = f_pantallazos["general"]
+
+    col_p1, col_p2 = st.columns(2)
+    with col_p1:
+        estados_formacion_pant = ["Todos"] + sorted(general_pant["Estado de la formación"].dropna().unique().tolist())
+        f_estado_form_pant = st.selectbox("Estado de la formación", estados_formacion_pant, key="filtro_estado_form_pant")
+    with col_p2:
+        estados_paquete_pant = ["Todos"] + sorted(general_pant["Paquete de pantallazos"].dropna().unique().tolist())
+        f_estado_paquete_pant = st.selectbox("Estado del paquete de pantallazos", estados_paquete_pant, key="filtro_estado_paquete_pant")
+
+    pant_df = general_pant[
+        general_pant["Paquete de pantallazos"].notna()
+        & (general_pant["Paquete de pantallazos"].astype(str).str.strip() != "")
+    ].copy()
+
+    if f_estado_form_pant != "Todos":
+        pant_df = pant_df[pant_df["Estado de la formación"] == f_estado_form_pant]
+    if f_estado_paquete_pant != "Todos":
+        pant_df = pant_df[pant_df["Paquete de pantallazos"] == f_estado_paquete_pant]
+
+    pant_df["Estado de la formación"] = pant_df["Estado de la formación"].fillna("Sin estado")
+
+    datos_pant = pant_df.groupby(["Paquete de pantallazos", "Estado de la formación"]).size().reset_index(name="Cantidad")
+
+    fig_pant = px.bar(
+        datos_pant, x="Paquete de pantallazos", y="Cantidad", color="Estado de la formación",
+        custom_data=["Estado de la formación"], barmode="stack", text="Cantidad",
+    )
+    fig_pant.update_layout(height=450, xaxis_tickangle=-20)
+
+    evento_pant = st.plotly_chart(
+        fig_pant, use_container_width=True,
+        on_select="rerun", selection_mode="points", key="grafica_pantallazos",
+    )
+
+    puntos_pant = evento_pant.get("selection", {}).get("points", []) if evento_pant else []
+
+    if puntos_pant:
+        paquete_clic = puntos_pant[0]["x"]
+        estado_form_clic = puntos_pant[0]["customdata"][0]
+        st.info(f"Filtrando por: **{paquete_clic}** — {estado_form_clic}")
+        detalle_pant = pant_df[
+            (pant_df["Paquete de pantallazos"] == paquete_clic)
+            & (pant_df["Estado de la formación"] == estado_form_clic)
+        ]
+    else:
+        detalle_pant = pant_df
+
+    st.write(f"**{len(detalle_pant)} personas**")
+    st.dataframe(
+        detalle_pant[["CC Prospecto", "Nombre completo", "Paquete de pantallazos", "Estado de la formación"]],
+        use_container_width=True,
+    )
+
+    st.divider()
+    st.markdown("**Acción**")
+
+    from github_actions import disparar_workflow
+    from webhooks import GITHUB_ACTIONS_REGISTRADOS
+
+    for accion in GITHUB_ACTIONS_REGISTRADOS:
+        key_confirmar_pant = f"confirmar_pant_{accion['id']}"
+        if key_confirmar_pant not in st.session_state:
+            st.session_state[key_confirmar_pant] = False
+
+        if not st.session_state[key_confirmar_pant]:
+            if st.button(accion["etiqueta"], key=f"btn_pant_{accion['id']}"):
+                st.session_state[key_confirmar_pant] = True
+                st.rerun()
+        else:
+            st.warning(accion["mensaje_confirmacion"])
+            cgp1, cgp2 = st.columns(2)
+            with cgp1:
+                if st.button("✅ Sí", key=f"si_pant_{accion['id']}"):
+                    with st.spinner(f"Ejecutando {accion['etiqueta']}..."):
+                        exito, mensaje = disparar_workflow(accion["repo"], accion["workflow_file"])
+                    st.session_state[key_confirmar_pant] = False
+                    if exito:
+                        st.success(mensaje)
+                    else:
+                        st.error(mensaje)
+            with cgp2:
+                if st.button("❌ No", key=f"no_pant_{accion['id']}"):
+                    st.session_state[key_confirmar_pant] = False
+                    st.rerun()
+
 # =========================================================
 # TAB 7: Auditoría de calidad (agente IA)
 # =========================================================
