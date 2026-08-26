@@ -27,7 +27,7 @@ class Config:
     # Sácalo de la URL de esa misma Sheet que ya usas hoy con el menú.
     REPORT_SPREADSHEET_ID: str = os.environ.get('REPORT_SPREADSHEET_ID', '')
 
-    MAX_PARTICIPANTES_POR_CORRIDA: int = 80
+    MAX_PARTICIPANTES_POR_CORRIDA: int = 5
 
     NOMBRE_HOJA_RESUMEN: str = 'Resumen por participante'
     NOMBRE_HOJA_HALLAZGOS: str = 'Hallazgos'
