@@ -53,3 +53,13 @@ WEBHOOKS_REGISTRADOS = [
         "mensaje_confirmacion": "¿Confirmas disparar el flujo de Reporte CRM?",
     },
 ]
+GITHUB_ACTIONS_REGISTRADOS = [
+    {
+        "id": "pantallazos_paquetes",
+        "etiqueta": "🖼️ Linkear pantallazos y crear paquetes",
+        "repo": "SGC140/STC_3_0_EFE",
+        "workflow_file": "pantallazos_paquetes.yaml",
+        "confirmar": True,
+        "mensaje_confirmacion": "¿Confirmas ejecutar el proceso de vinculación de pantallazos y creación de paquetes?",
+    },
+]
