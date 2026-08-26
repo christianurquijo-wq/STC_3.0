@@ -813,6 +813,7 @@ with tab6:
                         st.success(mensaje)
                     else:
                         st.error(mensaje)
+                    st.rerun()
             with cgp2:
                 if st.button("❌ No", key=f"no_pant_{accion['id']}"):
                     st.session_state[key_confirmar_pant] = False

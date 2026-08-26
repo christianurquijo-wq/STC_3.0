@@ -29,7 +29,7 @@ def disparar_workflow(repo: str, workflow_file: str, rama: str = "main") -> tupl
     try:
         resp = requests.post(url, headers=headers, json=body, timeout=15)
         if resp.status_code == 204:
-            return True, "Workflow disparado correctamente en GitHub Actions."
+            return True, "Ha iniciado la generación de paquetes..."
         return False, f"GitHub respondió con código {resp.status_code}: {resp.text}"
     except Exception as e:
         return False, f"Error al conectar con GitHub: {e}"
