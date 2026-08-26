@@ -274,79 +274,80 @@ def render():
                         st.session_state.pop('dicc_nombres_nuevos', None)
                         st.rerun()
 
-    with st.expander('🔬 Modo debug — ver el detalle del agente IA para una cédula'):
-        st.caption(
-            'Corre el agente IA sobre todos los documentos clasificados de UNA cédula puntual y '
-            'muestra el detalle completo de cada llamada: el prompt exacto que se le mandó (incluyendo '
-            'qué datos del FCS y qué rango de vigencia usó) y la respuesta cruda completa — incluso '
-            'cuando el documento está en regla, que hoy no queda registrado en ningún lado. Úsalo para '
-            'calibrar por qué el agente marca (o no marca) una novedad. Cada documento revisado aquí '
-            'hace una llamada real a Gemini (gasta tokens de verdad).'
-        )
+    st.divider()
+    st.subheader('🔬 Modo debug — ver el detalle del agente IA para una cédula')
+    st.caption(
+        'Corre el agente IA sobre todos los documentos clasificados de UNA cédula puntual y '
+        'muestra el detalle completo de cada llamada: el prompt exacto que se le mandó (incluyendo '
+        'qué datos del FCS y qué rango de vigencia usó) y la respuesta cruda completa — incluso '
+        'cuando el documento está en regla, que hoy no queda registrado en ningún lado. Úsalo para '
+        'calibrar por qué el agente marca (o no marca) una novedad. Cada documento revisado aquí '
+        'hace una llamada real a Gemini (gasta tokens de verdad).'
+    )
 
-        cedula_debug = st.text_input('Número de documento a revisar', key='debug_cedula')
+    cedula_debug = st.text_input('Número de documento a revisar', key='debug_cedula')
 
-        if st.button('🔬 Ejecutar diagnóstico detallado', key='debug_ejecutar'):
-            import agente
-            import debug_agente
-            import diccionario as diccionario_mod
-            from fcs import cargar_fcs
-            from utilidades import normalizar_documento
+    if st.button('🔬 Ejecutar diagnóstico detallado', key='debug_ejecutar'):
+        import agente
+        import debug_agente
+        import diccionario as diccionario_mod
+        from fcs import cargar_fcs
+        from utilidades import normalizar_documento
 
-            with st.spinner('Buscando la carpeta y llamando al agente sobre cada documento clasificado…'):
-                try:
-                    drive_service = obtener_servicio_drive(credenciales)
-                    dicc_actual, ignorar_actual = diccionario_mod.cargar_diccionario(ss)
-                    carpeta = debug_agente.buscar_carpeta_participante(drive_service, CONFIG.ROOT_FOLDER_ID, cedula_debug)
+        with st.spinner('Buscando la carpeta y llamando al agente sobre cada documento clasificado…'):
+            try:
+                drive_service = obtener_servicio_drive(credenciales)
+                dicc_actual, ignorar_actual = diccionario_mod.cargar_diccionario(ss)
+                carpeta = debug_agente.buscar_carpeta_participante(drive_service, CONFIG.ROOT_FOLDER_ID, cedula_debug)
 
-                    if not carpeta:
-                        st.warning(f'No se encontró carpeta para la cédula "{cedula_debug}".')
-                    else:
-                        fcs_por_documento = cargar_fcs(gc, CONFIG) if CONFIG.USAR_FCS else {}
-                        datos_fcs = fcs_por_documento.get(normalizar_documento(cedula_debug))
-                        client = agente.obtener_cliente_gemini()
-                        resultados = debug_agente.depurar_participante(
-                            client, drive_service, CONFIG, dicc_actual, ignorar_actual, carpeta, cedula_debug, datos_fcs,
-                        )
-                except Exception as e:
-                    st.error(f'Falló el diagnóstico: {e}')
+                if not carpeta:
+                    st.warning(f'No se encontró carpeta para la cédula "{cedula_debug}".')
                 else:
-                    st.session_state['debug_resultados'] = resultados
-                    st.session_state['debug_carpeta'] = carpeta
-                    st.session_state['debug_fcs'] = datos_fcs
+                    fcs_por_documento = cargar_fcs(gc, CONFIG) if CONFIG.USAR_FCS else {}
+                    datos_fcs = fcs_por_documento.get(normalizar_documento(cedula_debug))
+                    client = agente.obtener_cliente_gemini()
+                    resultados = debug_agente.depurar_participante(
+                        client, drive_service, CONFIG, dicc_actual, ignorar_actual, carpeta, cedula_debug, datos_fcs,
+                    )
+            except Exception as e:
+                st.error(f'Falló el diagnóstico: {e}')
+            else:
+                st.session_state['debug_resultados'] = resultados
+                st.session_state['debug_carpeta'] = carpeta
+                st.session_state['debug_fcs'] = datos_fcs
 
-        resultados_debug = st.session_state.get('debug_resultados')
-        if resultados_debug:
-            carpeta_info = st.session_state.get('debug_carpeta') or {}
-            st.write(
-                f"**Carpeta:** {carpeta_info.get('nombre_mes')}/{carpeta_info.get('name')} — "
-                f"{len(resultados_debug)} documento(s) clasificado(s) revisado(s)."
-            )
-            fcs_info = st.session_state.get('debug_fcs')
-            st.write(f"**Datos del FCS usados para esta cédula:** {fcs_info if fcs_info else 'no había datos del FCS.'}")
+    resultados_debug = st.session_state.get('debug_resultados')
+    if resultados_debug:
+        carpeta_info = st.session_state.get('debug_carpeta') or {}
+        st.write(
+            f"**Carpeta:** {carpeta_info.get('nombre_mes')}/{carpeta_info.get('name')} — "
+            f"{len(resultados_debug)} documento(s) clasificado(s) revisado(s)."
+        )
+        fcs_info = st.session_state.get('debug_fcs')
+        st.write(f"**Datos del FCS usados para esta cédula:** {fcs_info if fcs_info else 'no había datos del FCS.'}")
 
-            if not resultados_debug:
-                st.info('Esta cédula no tiene ningún documento clasificado por el Diccionario en su carpeta.')
+        if not resultados_debug:
+            st.info('Esta cédula no tiene ningún documento clasificado por el Diccionario en su carpeta.')
 
-            for r in resultados_debug:
-                titulo = f"📄 {r['nombre_archivo']}  →  campo: {r['campo']}"
+        for r in resultados_debug:
+            titulo = f"📄 {r['nombre_archivo']}  →  campo: {r['campo']}"
+            if r['error']:
+                titulo += '  ⚠️ ERROR'
+            with st.expander(titulo):
                 if r['error']:
-                    titulo += '  ⚠️ ERROR'
-                with st.expander(titulo):
-                    if r['error']:
-                        st.error(r['error'])
+                    st.error(r['error'])
+                else:
+                    datos = r['datos_crudos'] or {}
+                    st.write(f"**¿Documento legible según el agente?:** {datos.get('documentoLegible')}")
+                    hallazgos = datos.get('hallazgos') or []
+                    if hallazgos:
+                        st.write('**Hallazgos que reportó:**')
+                        st.dataframe(pd.DataFrame(hallazgos), use_container_width=True, hide_index=True)
                     else:
-                        datos = r['datos_crudos'] or {}
-                        st.write(f"**¿Documento legible según el agente?:** {datos.get('documentoLegible')}")
-                        hallazgos = datos.get('hallazgos') or []
-                        if hallazgos:
-                            st.write('**Hallazgos que reportó:**')
-                            st.dataframe(pd.DataFrame(hallazgos), use_container_width=True, hide_index=True)
-                        else:
-                            st.success('El agente no reportó ninguna novedad para este documento.')
+                        st.success('El agente no reportó ninguna novedad para este documento.')
 
-                    st.write(f"**Tokens usados en esta llamada:** {r['tokens_usados']}")
-                    st.write('**Códigos de observación disponibles para este campo:**')
-                    st.code(', '.join(r['codigos_disponibles']), language=None)
-                    st.write('**Prompt exacto enviado al agente (el contexto del documento, sin el PDF):**')
-                    st.code(r['prompt_documento'], language=None)
+                st.write(f"**Tokens usados en esta llamada:** {r['tokens_usados']}")
+                st.write('**Códigos de observación disponibles para este campo:**')
+                st.code(', '.join(r['codigos_disponibles']), language=None)
+                st.write('**Prompt exacto enviado al agente (el contexto del documento, sin el PDF):**')
+                st.code(r['prompt_documento'], language=None)
