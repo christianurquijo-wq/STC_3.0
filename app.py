@@ -789,9 +789,6 @@ with tab6:
         use_container_width=True,
     )
 
-    st.divider()
-    st.markdown("**Acción**")
-
     from github_actions import disparar_workflow
     from webhooks import GITHUB_ACTIONS_REGISTRADOS
 
