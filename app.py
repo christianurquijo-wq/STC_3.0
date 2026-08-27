@@ -108,8 +108,9 @@ except Exception as e:
         st.cache_data.clear()
         st.rerun()
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
-    "🔍 Consulta por CC", "📄 Compilador FCS", "⏰ Alertas por tiempos", "📊 Overview", "🌐 Dashboard Proyecto", "📋 Evidencias SDDE", "🔎 Auditoría de calidad",
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+    "🔍 Consulta por CC", "📄 Compilador FCS", "⏰ Alertas por tiempos", "📊 Overview",
+    "🌐 Dashboard Proyecto", "📋 Evidencias SDDE", "🔎 Auditoría de calidad", "🎯 Seguimiento individual",
 ])
 
 # =========================================================
@@ -824,3 +825,173 @@ with tab6:
 # =========================================================
 with tab7:
     pestana_auditoria.render()
+
+# =========================================================
+# TAB 8: Seguimiento Individual
+# =========================================================
+with tab8:
+    from analitica import (
+        cargar_todo_cache, cargar_formacion_consolidado_cache, serie_lineal_por_grupo,
+        tabla_resumen_calidad, tabla_resumen_formacion, datos_barras_estado_formacion,
+        datos_barras_cuartiles, META_VERIFICACION_LINEA, META_ORIENTACION_LINEA, META_FORMACION_LINEA,
+    )
+    from normalizador_texto import normalizar_texto
+
+    st.subheader("🎯 Seguimiento Individual")
+
+    granularidad_individual = st.radio("Granularidad de las gráficas de línea:", ["Diaria", "Semanal"], horizontal=True, key="gran_individual")
+
+    with carga_personalizada("Cargando datos..."):
+        f_ind = cargar_todo_cache()
+    general_ind = f_ind["general"]
+
+    # ---------------------------------------------------
+    # Expander 1: Verificación
+    # ---------------------------------------------------
+    with st.expander("✅ Verificación", expanded=False):
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            verificadores = ["Todos"] + sorted(general_ind["Verificador"].dropna().unique().tolist())
+            f_verificador = st.selectbox("Verificador", verificadores, key="f_verificador_ind")
+        with c2:
+            hitos_v = ["Todos"] + sorted(general_ind["Hito"].dropna().unique().tolist())
+            f_hito_v = st.selectbox("Hito", hitos_v, key="f_hito_v_ind")
+        with c3:
+            cal_v = ["Todos", "TRUE", "FALSE"]
+            f_calidad_v = st.selectbox("Revisión de calidad", cal_v, key="f_calidad_v_ind")
+
+        df_v = general_ind[general_ind["Estado CRM"].astype(str).str.strip() == "Matriculado"].copy()
+        if f_verificador != "Todos":
+            df_v = df_v[df_v["Verificador"] == f_verificador]
+        if f_hito_v != "Todos":
+            df_v = df_v[df_v["Hito"] == f_hito_v]
+        if f_calidad_v != "Todos":
+            df_v = df_v[df_v["Verificación Calidad"].astype(str).str.strip().str.upper() == f_calidad_v]
+
+        st.write(f"**{len(df_v)} matriculados**")
+
+        serie_v = serie_lineal_por_grupo(df_v, "Verificador", "Fecha de alta", granularidad_individual)
+        if not serie_v.empty:
+            fig_v = px.line(serie_v, x="Periodo", y="Cantidad", color="Verificador", markers=True)
+            fig_v.add_hline(y=META_VERIFICACION_LINEA, line_dash="dash", line_color="#821F0D",
+                             annotation_text=f"Meta: {META_VERIFICACION_LINEA}")
+            fig_v.update_layout(height=400)
+            st.plotly_chart(fig_v, use_container_width=True)
+        else:
+            st.info("Sin datos para los filtros seleccionados.")
+
+        calidad_bool_v = df_v["Verificación Calidad"].astype(str).str.strip().str.upper() == "TRUE"
+        st.dataframe(tabla_resumen_calidad(df_v, "Verificador", calidad_bool_v), use_container_width=True, hide_index=True)
+
+    # ---------------------------------------------------
+    # Expander 2: Orientación
+    # ---------------------------------------------------
+    with st.expander("🧭 Orientación", expanded=False):
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            orientadores = ["Todos"] + sorted(general_ind["Orientador"].dropna().unique().tolist())
+            f_orientador = st.selectbox("Orientador", orientadores, key="f_orientador_ind")
+        with c2:
+            hitos_o = ["Todos"] + sorted(general_ind["Hito"].dropna().unique().tolist())
+            f_hito_o = st.selectbox("Hito", hitos_o, key="f_hito_o_ind")
+        with c3:
+            cal_o = ["Todos", "Revisado", "Sin revisar"]
+            f_calidad_o = st.selectbox("Revisión de calidad", cal_o, key="f_calidad_o_ind")
+
+        reporte_o = general_ind["Reporte"].astype(str).str.strip()
+        df_o = general_ind[reporte_o.isin(["FINALIZADO", "FINALIZADO PENDIENTE X REMISIÓN"])].copy()
+
+        tiene_fecha_calidad_o = df_o["Fecha Calidad Orientación"].notna() & (df_o["Fecha Calidad Orientación"].astype(str).str.strip() != "")
+
+        if f_orientador != "Todos":
+            df_o = df_o[df_o["Orientador"] == f_orientador]
+        if f_hito_o != "Todos":
+            df_o = df_o[df_o["Hito"] == f_hito_o]
+        if f_calidad_o != "Todos":
+            mask_calidad_o = df_o["Fecha Calidad Orientación"].notna() & (df_o["Fecha Calidad Orientación"].astype(str).str.strip() != "")
+            df_o = df_o[mask_calidad_o] if f_calidad_o == "Revisado" else df_o[~mask_calidad_o]
+
+        st.write(f"**{len(df_o)} orientados (reporte finalizado)**")
+
+        serie_o = serie_lineal_por_grupo(df_o, "Orientador", "Fecha Orientación", granularidad_individual)
+        if not serie_o.empty:
+            fig_o = px.line(serie_o, x="Periodo", y="Cantidad", color="Orientador", markers=True)
+            fig_o.add_hline(y=META_ORIENTACION_LINEA, line_dash="dash", line_color="#821F0D",
+                             annotation_text=f"Meta: {META_ORIENTACION_LINEA}")
+            fig_o.update_layout(height=400)
+            st.plotly_chart(fig_o, use_container_width=True)
+        else:
+            st.info("Sin datos para los filtros seleccionados.")
+
+        calidad_bool_o = df_o["Fecha Calidad Orientación"].notna() & (df_o["Fecha Calidad Orientación"].astype(str).str.strip() != "")
+        st.dataframe(tabla_resumen_calidad(df_o, "Orientador", calidad_bool_o), use_container_width=True, hide_index=True)
+
+    # ---------------------------------------------------
+    # Expander 3: Formación
+    # ---------------------------------------------------
+    with st.expander("🎓 Formación", expanded=False):
+        with carga_personalizada("Cargando seguimiento de formación..."):
+            form_cons = cargar_formacion_consolidado_cache()
+
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            estados_f = ["Todos"] + sorted(form_cons["ESTADO DE LA FORMACIÓN"].dropna().unique().tolist())
+            f_estado_f = st.selectbox("Estado de la formación", estados_f, key="f_estado_form_ind")
+        with c2:
+            responsables_f = ["Todos"] + sorted(form_cons["Responsable"].dropna().unique().tolist())
+            f_responsable_f = st.selectbox("Responsable", responsables_f, key="f_responsable_ind")
+        with c3:
+            paquetes_pago_f = ["Todos"] + sorted(form_cons["PAQUETE DE PAGO"].dropna().unique().tolist())
+            f_paquete_pago_f = st.selectbox("Paquete de pago", paquetes_pago_f, key="f_paquete_pago_ind")
+
+        df_f = form_cons.copy()
+        if f_estado_f != "Todos":
+            df_f = df_f[df_f["ESTADO DE LA FORMACIÓN"] == f_estado_f]
+        if f_responsable_f != "Todos":
+            df_f = df_f[df_f["Responsable"] == f_responsable_f]
+        if f_paquete_pago_f != "Todos":
+            df_f = df_f[df_f["PAQUETE DE PAGO"] == f_paquete_pago_f]
+
+        st.write(f"**{len(df_f)} registros**")
+
+        estado_f_serie = df_f["ESTADO DE LA FORMACIÓN"].astype(str).str.strip().str.upper()
+        df_finalizados = df_f[estado_f_serie.isin(["FINALIZADO", "CERTIFICADO"])]
+
+        serie_f = serie_lineal_por_grupo(df_finalizados, "Responsable", "FECHA DE FINALIZACIÓN", granularidad_individual)
+        if not serie_f.empty:
+            fig_f = px.line(serie_f, x="Periodo", y="Cantidad", color="Responsable", markers=True)
+            fig_f.add_hline(y=META_FORMACION_LINEA, line_dash="dash", line_color="#821F0D",
+                             annotation_text=f"Meta: {META_FORMACION_LINEA}")
+            fig_f.update_layout(height=400)
+            st.plotly_chart(fig_f, use_container_width=True)
+        else:
+            st.info("Sin datos de finalizados/certificados para los filtros seleccionados.")
+
+        st.markdown("#### Resumen por responsable")
+        st.dataframe(tabla_resumen_formacion(df_f), use_container_width=True, hide_index=True)
+
+        st.markdown("#### Asignados por Responsable y Estado")
+        datos_estado_f = datos_barras_estado_formacion(df_f)
+        if not datos_estado_f.empty:
+            fig_estado_f = px.bar(datos_estado_f, y="Responsable", x="Cantidad", color="Estado",
+                                   orientation="h", barmode="stack")
+            fig_estado_f.update_layout(height=450)
+            st.plotly_chart(fig_estado_f, use_container_width=True)
+
+        st.markdown("#### Progreso de plataforma por cuartil (Responsable)")
+        asistencias_disponibles = sorted(form_cons["% ASISTENCIA"].dropna().unique().tolist())
+        f_asistencia_cuartil = st.multiselect("Filtrar por % Asistencia", asistencias_disponibles, key="f_asistencia_cuartil_ind")
+
+        df_cuartil = df_f.copy()
+        if f_asistencia_cuartil:
+            df_cuartil = df_cuartil[df_cuartil["% ASISTENCIA"].isin(f_asistencia_cuartil)]
+
+        datos_cuartil = datos_barras_cuartiles(df_cuartil)
+        if not datos_cuartil.empty:
+            fig_cuartil = px.bar(datos_cuartil, y="Responsable", x="Cantidad", color="Cuartil",
+                                  orientation="h", barmode="stack",
+                                  category_orders={"Cuartil": ["0% - 25%", "25% - 50%", "50% - 75%", "75% - 100%"]})
+            fig_cuartil.update_layout(height=450)
+            st.plotly_chart(fig_cuartil, use_container_width=True)
+        else:
+            st.info("Sin datos de progreso para el filtro actual.")

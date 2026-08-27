@@ -60,6 +60,11 @@ FUENTES = {
         "gid": "1376346035",
         "ancla": "Documento",
     },
+        "formacion_consolidado": {
+        "id": _obtener_config("SHEET_ID_FORMACION"),
+        "gid": "0",
+        "ancla": "No. DOCUMENTO",
+    },
 }
 
 def url_csv(nombre_fuente: str) -> str:

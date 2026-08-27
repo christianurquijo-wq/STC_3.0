@@ -709,3 +709,83 @@ def serie_orientacion_filtrada(general: pd.DataFrame, granularidad: str = "Seman
     reporte = general["Reporte"].astype(str).str.strip()
     filtrado = general[reporte.isin(["FINALIZADO", "FINALIZADO PENDIENTE X REMISIÓN"])]
     return serie_temporal(filtrado, "Fecha Orientación", granularidad)
+
+# =========================================================
+# Seguimiento Individual
+# =========================================================
+
+META_VERIFICACION_LINEA = 50   
+META_ORIENTACION_LINEA = 50   
+META_FORMACION_LINEA = 20      
+
+@st.cache_data(ttl=600)
+def cargar_formacion_consolidado_cache():
+    df, _ = cargar_fuente("formacion_consolidado")
+    return df
+
+
+def serie_lineal_por_grupo(df: pd.DataFrame, columna_grupo: str, columna_fecha: str, granularidad: str = "Semanal") -> pd.DataFrame:
+    temp = df.copy()
+    temp["_fecha_parsed"] = pd.to_datetime(temp[columna_fecha], dayfirst=True, errors="coerce")
+    temp = temp.dropna(subset=["_fecha_parsed"])
+    temp = temp[temp[columna_grupo].notna() & (temp[columna_grupo].astype(str).str.strip() != "")]
+
+    if granularidad == "Semanal":
+        temp["Periodo"] = (temp["_fecha_parsed"] - pd.to_timedelta(temp["_fecha_parsed"].dt.weekday, unit="D")).dt.date
+    else:
+        temp["Periodo"] = temp["_fecha_parsed"].dt.date
+
+    resultado = temp.groupby(["Periodo", columna_grupo]).size().reset_index(name="Cantidad")
+    return resultado
+
+
+def tabla_resumen_calidad(df: pd.DataFrame, columna_grupo: str, serie_calidad: pd.Series) -> pd.DataFrame:
+    temp = df.copy()
+    temp["_calidad"] = serie_calidad.values
+    resumen = temp.groupby(columna_grupo)["_calidad"].agg(["sum", "count"]).reset_index()
+    resumen.columns = [columna_grupo, "Verificado por calidad", "Total"]
+    resumen["Sin verificar por calidad"] = resumen["Total"] - resumen["Verificado por calidad"]
+    return resumen[[columna_grupo, "Verificado por calidad", "Sin verificar por calidad"]].sort_values(columna_grupo)
+
+
+def tabla_resumen_formacion(df: pd.DataFrame) -> pd.DataFrame:
+    estado = df["ESTADO DE LA FORMACIÓN"].astype(str).str.strip().str.upper()
+    temp = df.copy()
+    temp["_inscrito"] = (estado == "INSCRITO").astype(int)
+    temp["_en_curso"] = (estado == "EN CURSO").astype(int)
+    temp["_finalizado"] = estado.isin(["FINALIZADO", "CERTIFICADO"]).astype(int)
+    resumen = temp.groupby("Responsable")[["_inscrito", "_en_curso", "_finalizado"]].sum().reset_index()
+    resumen.columns = ["Responsable", "Inscritos", "En curso", "Finalizados/Certificados"]
+    return resumen.sort_values("Responsable")
+
+
+def datos_barras_estado_formacion(df: pd.DataFrame) -> pd.DataFrame:
+    temp = df.copy()
+    temp["Estado"] = temp["ESTADO DE LA FORMACIÓN"].fillna("Sin estado")
+    temp = temp[temp["Responsable"].notna() & (temp["Responsable"].astype(str).str.strip() != "")]
+    return temp.groupby(["Responsable", "Estado"]).size().reset_index(name="Cantidad")
+
+
+def _clasificar_cuartil(valor) -> str:
+    try:
+        v = float(str(valor).replace("%", "").replace(",", ".").strip())
+    except (ValueError, TypeError):
+        return None
+    if pd.isna(v):
+        return None
+    if v <= 25:
+        return "0% - 25%"
+    elif v <= 50:
+        return "25% - 50%"
+    elif v <= 75:
+        return "50% - 75%"
+    else:
+        return "75% - 100%"
+
+
+def datos_barras_cuartiles(df: pd.DataFrame) -> pd.DataFrame:
+    temp = df.copy()
+    temp["Cuartil"] = temp["% AVANCE PLAT"].apply(_clasificar_cuartil)
+    temp = temp.dropna(subset=["Cuartil"])
+    temp = temp[temp["Responsable"].notna() & (temp["Responsable"].astype(str).str.strip() != "")]
+    return temp.groupby(["Responsable", "Cuartil"]).size().reset_index(name="Cantidad")
