@@ -851,22 +851,21 @@ with tab8:
     with st.expander("✅ Verificación", expanded=False):
         c1, c2, c3 = st.columns(3)
         with c1:
-            verificadores = ["Todos"] + sorted(general_ind["Verificador"].dropna().unique().tolist())
-            f_verificador = st.selectbox("Verificador", verificadores, key="f_verificador_ind")
+            verificadores = sorted(general_ind["Verificador"].dropna().unique().tolist())
+            f_verificador = st.multiselect("Verificador", verificadores, key="f_verificador_ind")
         with c2:
-            hitos_v = ["Todos"] + sorted(general_ind["Hito"].dropna().unique().tolist())
-            f_hito_v = st.selectbox("Hito", hitos_v, key="f_hito_v_ind")
+            hitos_v = sorted(general_ind["Hito"].dropna().unique().tolist())
+            f_hito_v = st.multiselect("Hito", hitos_v, key="f_hito_v_ind")
         with c3:
-            cal_v = ["Todos", "TRUE", "FALSE"]
-            f_calidad_v = st.selectbox("Revisión de calidad", cal_v, key="f_calidad_v_ind")
+            f_calidad_v = st.multiselect("Revisión de calidad", ["TRUE", "FALSE"], key="f_calidad_v_ind")
 
         df_v = general_ind[general_ind["Estado CRM"].astype(str).str.strip() == "Matriculado"].copy()
-        if f_verificador != "Todos":
-            df_v = df_v[df_v["Verificador"] == f_verificador]
-        if f_hito_v != "Todos":
-            df_v = df_v[df_v["Hito"] == f_hito_v]
-        if f_calidad_v != "Todos":
-            df_v = df_v[df_v["Verificación Calidad"].astype(str).str.strip().str.upper() == f_calidad_v]
+        if f_verificador:
+            df_v = df_v[df_v["Verificador"].isin(f_verificador)]
+        if f_hito_v:
+            df_v = df_v[df_v["Hito"].isin(f_hito_v)]
+        if f_calidad_v:
+            df_v = df_v[df_v["Verificación Calidad"].astype(str).str.strip().str.upper().isin(f_calidad_v)]
 
         st.write(f"**{len(df_v)} matriculados**")
 
@@ -889,27 +888,29 @@ with tab8:
     with st.expander("🧭 Orientación", expanded=False):
         c1, c2, c3 = st.columns(3)
         with c1:
-            orientadores = ["Todos"] + sorted(general_ind["Orientador"].dropna().unique().tolist())
-            f_orientador = st.selectbox("Orientador", orientadores, key="f_orientador_ind")
+            orientadores = sorted(general_ind["Orientador"].dropna().unique().tolist())
+            f_orientador = st.multiselect("Orientador", orientadores, key="f_orientador_ind")
         with c2:
-            hitos_o = ["Todos"] + sorted(general_ind["Hito"].dropna().unique().tolist())
-            f_hito_o = st.selectbox("Hito", hitos_o, key="f_hito_o_ind")
+            hitos_o = sorted(general_ind["Hito"].dropna().unique().tolist())
+            f_hito_o = st.multiselect("Hito", hitos_o, key="f_hito_o_ind")
         with c3:
-            cal_o = ["Todos", "Revisado", "Sin revisar"]
-            f_calidad_o = st.selectbox("Revisión de calidad", cal_o, key="f_calidad_o_ind")
+            f_calidad_o = st.multiselect("Revisión de calidad", ["Revisado", "Sin revisar"], key="f_calidad_o_ind")
 
         reporte_o = general_ind["Reporte"].astype(str).str.strip()
         df_o = general_ind[reporte_o.isin(["FINALIZADO", "FINALIZADO PENDIENTE X REMISIÓN"])].copy()
 
-        tiene_fecha_calidad_o = df_o["Fecha Calidad Orientación"].notna() & (df_o["Fecha Calidad Orientación"].astype(str).str.strip() != "")
-
-        if f_orientador != "Todos":
-            df_o = df_o[df_o["Orientador"] == f_orientador]
-        if f_hito_o != "Todos":
-            df_o = df_o[df_o["Hito"] == f_hito_o]
-        if f_calidad_o != "Todos":
+        if f_orientador:
+            df_o = df_o[df_o["Orientador"].isin(f_orientador)]
+        if f_hito_o:
+            df_o = df_o[df_o["Hito"].isin(f_hito_o)]
+        if f_calidad_o:
             mask_calidad_o = df_o["Fecha Calidad Orientación"].notna() & (df_o["Fecha Calidad Orientación"].astype(str).str.strip() != "")
-            df_o = df_o[mask_calidad_o] if f_calidad_o == "Revisado" else df_o[~mask_calidad_o]
+            condiciones = []
+            if "Revisado" in f_calidad_o:
+                condiciones.append(mask_calidad_o)
+            if "Sin revisar" in f_calidad_o:
+                condiciones.append(~mask_calidad_o)
+            df_o = df_o[pd.concat(condiciones, axis=1).any(axis=1)]
 
         st.write(f"**{len(df_o)} orientados (reporte finalizado)**")
 
@@ -935,29 +936,29 @@ with tab8:
 
         c1, c2, c3 = st.columns(3)
         with c1:
-            estados_f = ["Todos"] + sorted(form_cons["ESTADO DE LA FORMACIÓN"].dropna().unique().tolist())
-            f_estado_f = st.selectbox("Estado de la formación", estados_f, key="f_estado_form_ind")
+            estados_f = sorted(form_cons["ESTADO DE LA FORMACIÓN"].dropna().unique().tolist())
+            f_estado_f = st.multiselect("Estado de la formación", estados_f, key="f_estado_form_ind")
         with c2:
-            responsables_f = ["Todos"] + sorted(form_cons["Responsable"].dropna().unique().tolist())
-            f_responsable_f = st.selectbox("Responsable", responsables_f, key="f_responsable_ind")
+            responsables_f = sorted(form_cons["Responsable"].dropna().unique().tolist())
+            f_responsable_f = st.multiselect("Responsable", responsables_f, key="f_responsable_ind")
         with c3:
-            paquetes_pago_f = ["Todos"] + sorted(form_cons["PAQUETE DE PAGO"].dropna().unique().tolist())
-            f_paquete_pago_f = st.selectbox("Paquete de pago", paquetes_pago_f, key="f_paquete_pago_ind")
+            paquetes_pago_f = sorted(form_cons["PAQUETE DE PAGO"].dropna().unique().tolist())
+            f_paquete_pago_f = st.multiselect("Paquete de pago", paquetes_pago_f, key="f_paquete_pago_ind")
 
         df_f = form_cons.copy()
-        if f_estado_f != "Todos":
-            df_f = df_f[df_f["ESTADO DE LA FORMACIÓN"] == f_estado_f]
-        if f_responsable_f != "Todos":
-            df_f = df_f[df_f["Responsable"] == f_responsable_f]
-        if f_paquete_pago_f != "Todos":
-            df_f = df_f[df_f["PAQUETE DE PAGO"] == f_paquete_pago_f]
+        if f_estado_f:
+            df_f = df_f[df_f["ESTADO DE LA FORMACIÓN"].isin(f_estado_f)]
+        if f_responsable_f:
+            df_f = df_f[df_f["Responsable"].isin(f_responsable_f)]
+        if f_paquete_pago_f:
+            df_f = df_f[df_f["PAQUETE DE PAGO"].isin(f_paquete_pago_f)]
 
         st.write(f"**{len(df_f)} registros**")
 
         estado_f_serie = df_f["ESTADO DE LA FORMACIÓN"].astype(str).str.strip().str.upper()
         df_finalizados = df_f[estado_f_serie.isin(["FINALIZADO", "CERTIFICADO"])]
 
-        serie_f = serie_lineal_por_grupo(df_finalizados, "Responsable", "FECHA DE FINALIZACIÓN", granularidad_individual)
+        serie_f = serie_lineal_por_grupo(df_finalizados, "Responsable", "FECHA DE FINALIZACIÓN (DD/MM/AAAA)", granularidad_individual)
         if not serie_f.empty:
             fig_f = px.line(serie_f, x="Periodo", y="Cantidad", color="Responsable", markers=True)
             fig_f.add_hline(y=META_FORMACION_LINEA, line_dash="dash", line_color="#821F0D",
