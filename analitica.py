@@ -726,7 +726,7 @@ def cargar_formacion_consolidado_cache():
 
 def serie_lineal_por_grupo(df: pd.DataFrame, columna_grupo: str, columna_fecha: str, granularidad: str = "Semanal") -> pd.DataFrame:
     temp = df.copy()
-    temp["_fecha_parsed"] = pd.to_datetime(temp[columna_fecha], format="%d/%m/%Y", errors="coerce")
+    temp["_fecha_parsed"] = pd.to_datetime(temp[columna_fecha], format="mixed", dayfirst=True, errors="coerce")
     temp = temp.dropna(subset=["_fecha_parsed"])
     temp = temp[temp[columna_grupo].notna() & (temp[columna_grupo].astype(str).str.strip() != "")]
 
