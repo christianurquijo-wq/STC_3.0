@@ -14,6 +14,7 @@ from typing import List, Optional
 
 import agente
 import diccionario
+import fichas_documentos
 from catalogo import OBSERVACIONES_INTERNAS, obtener_observacion
 from agente_config import AREA_SUGERIDA_POR_CATEGORIA, CAMPOS_PLATAFORMA
 from consumo import registrar_consumo_de_corrida, verificar_techo_tokens_mensual
@@ -237,7 +238,7 @@ def revisar_carpeta_participante(
             archivo_bytes = descargar_bytes_archivo(drive_service, item['id'])
             resultado = agente.evaluar_documento_con_agente(
                 client_gemini, archivo_bytes, item['nombre_original'], item['campo'], numero_documento,
-                fcs_data, presupuesto_agente, config, sleep_fn,
+                fcs_data, presupuesto_agente, config, sleep_fn, poblacion=poblacion,
             )
 
             if resultado['saltado']:
@@ -264,17 +265,10 @@ def revisar_carpeta_participante(
         if presentes_por_campo[campo]:
             continue  # está presente, no hay nada que reportar
 
-        if campo == 'autopostulacionJovenesConOportunidades' and poblacion != 'JCO':
-            continue  # solo aplica a población JCO
-
-        if campo == 'mitigacionBarreras':
-            filas_hallazgos.append(fila_hallazgo(
-                ahora, nombre_mes, numero_documento, campo, OBSERVACIONES_INTERNAS['FALTA'],
-                'Al menos la Encuesta de cierre debería estar en este campo.',
-            ))
-            continue
-
         if campo == 'cursoHabilidadTecnica':
+            # Caso especial: aplica según el paquete del FCS (no según población), y si el
+            # paquete todavía no se pudo determinar no se puede decidir si aplica o no —
+            # se reporta aparte en vez de asumir "falta".
             if paquete_fcs in ('BÁSICO', 'BASICO'):
                 continue  # no aplica, confirmado por FCS
             if paquete_fcs == 'ESPECIALIZADO':
@@ -286,7 +280,17 @@ def revisar_carpeta_participante(
             filas_hallazgos.append(fila_hallazgo(ahora, nombre_mes, numero_documento, campo, OBSERVACIONES_INTERNAS['PAQUETE_DESCONOCIDO'], ''))
             continue
 
-        filas_hallazgos.append(fila_hallazgo(ahora, nombre_mes, numero_documento, campo, OBSERVACIONES_INTERNAS['FALTA'], ''))
+        # Todos los demás campos: la regla de "quién debe tenerlo" vive en fichas_documentos.py
+        # (confirmada por Christian el 2026-08-26) — un solo lugar para ajustarla sin tocar esta
+        # función. Antes 'mitigacionBarreras' se exigía a TODOS los participantes (bug: solo
+        # aplica a especializados no-JCO) y 'evidenciaDesempleoConsultaAdres'/'certificadoDeResidencia'
+        # no tenían ninguna excepción para JCO (bug: ninguno de los dos aplica a JCO).
+        regla_aplica = fichas_documentos.FICHAS.get(campo, {}).get('aplica', fichas_documentos.APLICA_TODOS)
+        if not fichas_documentos.aplica_para_poblacion_y_paquete(regla_aplica, poblacion, paquete_fcs):
+            continue
+
+        detalle = 'Al menos la Encuesta de cierre debería estar en este campo.' if campo == 'mitigacionBarreras' else ''
+        filas_hallazgos.append(fila_hallazgo(ahora, nombre_mes, numero_documento, campo, OBSERVACIONES_INTERNAS['FALTA'], detalle))
 
     # --- Estado por campo para el resumen: No encontrado / Con novedad / Verificado ---
     campos_con_hallazgo = {f[3] for f in filas_hallazgos}

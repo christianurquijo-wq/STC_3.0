@@ -15,6 +15,7 @@ import time
 from typing import List, Optional
 
 import agente
+import fichas_documentos
 from catalogo import codigos_validos_para_campo
 from google_clients import descargar_bytes_archivo, listar_archivos, listar_subcarpetas
 from utilidades import normalizar_documento, normalizar_nombre
@@ -36,17 +37,22 @@ def buscar_carpeta_participante(drive_service, carpeta_raiz_id: str, numero_docu
 def depurar_documento(
     client, archivo_bytes: bytes, nombre_archivo: str, campo: str,
     numero_documento: str, datos_fcs: Optional[dict], config,
+    poblacion: Optional[str] = None,
 ) -> dict:
     """
     Igual que agente.evaluar_documento_con_agente(), pero sin presupuesto de
     corrida ni pausa de rate-limit, y devolviendo TODO lo que se usó para
     decidir — el prompt exacto y la respuesta cruda sin filtrar — para poder
     ver exactamente qué comparó el agente y por qué.
+
+    poblacion se calcula UNA sola vez para todo el participante (ver
+    depurar_participante) con fichas_documentos.resolver_poblacion(), para
+    que use exactamente el mismo criterio que revision.py.
     """
     codigos_validos = codigos_validos_para_campo(campo)
     schema = agente.construir_esquema_respuesta(codigos_validos)
     prompt_sistema = agente.construir_prompt_sistema()
-    prompt_documento = agente.construir_prompt_documento(campo, numero_documento, datos_fcs, nombre_archivo, config)
+    prompt_documento = agente.construir_prompt_documento(campo, numero_documento, datos_fcs, nombre_archivo, config, poblacion)
 
     resultado = agente.llamar_agente(client, config.MODELO_GEMINI, archivo_bytes, prompt_sistema, prompt_documento, schema)
 
@@ -69,21 +75,33 @@ def depurar_participante(
 ) -> List[dict]:
     """Clasifica los archivos de la carpeta de un participante (misma lógica que revision.py) y
     llama al agente en modo debug sobre cada uno clasificado (los sin-clasificar/ignorados se saltan,
-    igual que en la corrida normal, porque el agente nunca los revisa tampoco ahí)."""
-    resultados = []
+    igual que en la corrida normal, porque el agente nunca los revisa tampoco ahí).
+
+    Dos pasadas: primero se clasifican TODOS los archivos (para poder resolver la población del
+    participante una sola vez, con el mismo criterio que revision.py — ver
+    fichas_documentos.resolver_poblacion), y solo después se llama al agente sobre cada uno, ya
+    con la población correcta para elegir la ficha/variante (ej. ADRES vs ACJ)."""
     archivos = listar_archivos(drive_service, carpeta_participante['id'])
-    for i, archivo in enumerate(archivos):
+    clasificados = []  # lista de (archivo, entrada) para los archivos que sí se van a revisar
+    for archivo in archivos:
         norm = normalizar_nombre(archivo['name'], numero_documento)
         if norm in ignorar_actual:
             continue
         entrada = diccionario_actual.get(norm)
         if not entrada:
             continue
+        clasificados.append((archivo, entrada))
 
+    poblacion = fichas_documentos.resolver_poblacion([entrada for _, entrada in clasificados], datos_fcs)
+
+    resultados = []
+    for i, (archivo, entrada) in enumerate(clasificados):
         archivo_bytes = descargar_bytes_archivo(drive_service, archivo['id'])
-        resultados.append(depurar_documento(client, archivo_bytes, archivo['name'], entrada['campo'], numero_documento, datos_fcs, config))
+        resultados.append(depurar_documento(
+            client, archivo_bytes, archivo['name'], entrada['campo'], numero_documento, datos_fcs, config, poblacion,
+        ))
 
-        if i < len(archivos) - 1:
+        if i < len(clasificados) - 1:
             sleep_fn(config.PAUSA_ENTRE_LLAMADAS_SEG)  # respeta el límite de solicitudes por minuto del nivel gratuito
 
     return resultados

@@ -24,6 +24,7 @@ import os
 import time
 from typing import List, Optional
 
+import fichas_documentos
 from catalogo import codigos_validos_para_campo
 
 
@@ -64,8 +65,19 @@ def construir_prompt_sistema() -> str:
     )
 
 
-def construir_prompt_documento(campo: str, numero_documento: str, datos_fcs: Optional[dict], nombre_archivo: str, config) -> str:
-    """Prompt específico de un documento: lo único que cambia entre llamadas."""
+def construir_prompt_documento(
+    campo: str, numero_documento: str, datos_fcs: Optional[dict], nombre_archivo: str, config,
+    poblacion: Optional[str] = None,
+) -> str:
+    """
+    Prompt específico de un documento: lo único que cambia entre llamadas.
+    Desde 2026-08-26 incluye la ficha de verificación de fichas_documentos.py
+    (qué ES el documento y qué se debe cruzar puntualmente) en vez de dejar
+    que el agente infiera todo del nombre del campo — antes el mismo párrafo
+    genérico se usaba para los 10 tipos de documento por igual.
+    """
+    ficha = fichas_documentos.obtener_ficha(campo, poblacion)
+
     contexto = (
         f'Campo de la plataforma al que corresponde este documento: "{campo}".\n'
         f'Nombre del archivo tal como está en Drive: "{nombre_archivo}".\n'
@@ -75,17 +87,33 @@ def construir_prompt_documento(campo: str, numero_documento: str, datos_fcs: Opt
         f'{config.VIGENCIA_DESDE.strftime("%d/%m/%Y")} hasta {config.VIGENCIA_HASTA.strftime("%d/%m/%Y")}.\n'
     )
 
+    if ficha.get('descripcion'):
+        contexto += f'\nQué es este documento: {ficha["descripcion"]}\n'
+    if ficha.get('que_revisar'):
+        contexto += f'Qué debes revisar puntualmente en este documento: {ficha["que_revisar"]}\n'
+
     if datos_fcs:
         jco = datos_fcs.get('jco')
-        poblacion = 'Jóvenes con Oportunidades (JCO)' if jco == 'SI' else ('general' if jco == 'NO' else 'no informada')
+        poblacion_texto = 'Jóvenes con Oportunidades (JCO)' if jco == 'SI' else ('general' if jco == 'NO' else 'no informada')
+        nombre_completo = (datos_fcs.get('nombre_completo') or '').strip()
         contexto += (
-            'Datos adicionales confirmados en el FCS (Consolidado) para este participante: '
+            '\nDatos adicionales confirmados en el FCS (Consolidado) para este participante: '
             f'paquete de servicio = "{datos_fcs.get("paquete") or "no informado"}", '
-            f'población = "{poblacion}".\n'
+            f'población = "{poblacion_texto}"'
         )
+        if nombre_completo:
+            contexto += f', nombre completo = "{nombre_completo}"'
+            contexto += (
+                '.\nCuando la ficha de arriba pida cruzar el nombre del participante, compáralo '
+                f'contra este nombre completo del FCS ("{nombre_completo}") — pequeñas diferencias '
+                'de tildes, orden de apellidos, o mayúsculas/minúsculas NO son un hallazgo; repórtalo '
+                'solo si el nombre en el documento es claramente distinto.\n'
+            )
+        else:
+            contexto += '.\nNo hay nombre completo disponible en el FCS para este participante — no marques hallazgos de nombre por esa razón.\n'
     else:
         contexto += (
-            'No hay datos del FCS disponibles para cruzar en esta corrida — no marques '
+            '\nNo hay datos del FCS disponibles para cruzar en esta corrida — no marques '
             'observaciones de "Coherencia con FCS" que dependan de un dato que no tienes.\n'
         )
 
@@ -179,6 +207,7 @@ def evaluar_documento_con_agente(
     presupuesto_agente: dict,
     config,
     sleep_fn=time.sleep,
+    poblacion: Optional[str] = None,
 ) -> dict:
     """
     Evalúa un documento clasificado (bytes + campo) con el agente IA. Respeta
@@ -189,6 +218,9 @@ def evaluar_documento_con_agente(
 
     presupuesto_agente es un dict mutable compartido por toda la corrida:
     {restantes, restantes_inicial, saltados, tokens_usados, detenido_por_tokens}.
+
+    poblacion ('GENERAL' | 'JCO' | 'NO DETERMINADA' | None) se usa para elegir
+    la variante correcta de la ficha de verificación (ver fichas_documentos.py).
     """
     sin_llamadas = presupuesto_agente['restantes'] <= 0
     sin_tokens = presupuesto_agente['tokens_usados'] >= config.MAX_TOKENS_POR_CORRIDA
@@ -203,7 +235,7 @@ def evaluar_documento_con_agente(
     codigos_validos = codigos_validos_para_campo(campo)
     schema = construir_esquema_respuesta(codigos_validos)
     prompt_sistema = construir_prompt_sistema()
-    prompt_documento = construir_prompt_documento(campo, numero_documento, datos_fcs, nombre_archivo, config)
+    prompt_documento = construir_prompt_documento(campo, numero_documento, datos_fcs, nombre_archivo, config, poblacion)
 
     resultado = llamar_agente(client, config.MODELO_GEMINI, archivo_bytes, prompt_sistema, prompt_documento, schema)
 

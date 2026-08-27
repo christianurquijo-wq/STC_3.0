@@ -84,7 +84,7 @@ def _preparar_fakes(monkeypatch):
 
     llamadas = {'n': 0}
 
-    def fake_evaluar_documento_con_agente(client, archivo_bytes, nombre_archivo, campo, numero_documento, datos_fcs, presupuesto_agente, config, sleep_fn):
+    def fake_evaluar_documento_con_agente(client, archivo_bytes, nombre_archivo, campo, numero_documento, datos_fcs, presupuesto_agente, config, sleep_fn, poblacion=None):
         presupuesto_agente['restantes'] -= 1
         llamadas['n'] += 1
         presupuesto_agente['tokens_usados'] += 100

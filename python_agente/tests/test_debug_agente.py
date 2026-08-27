@@ -58,7 +58,7 @@ def test_depurar_participante_solo_llama_al_agente_sobre_archivos_clasificados(m
     monkeypatch.setattr(debug_agente, 'descargar_bytes_archivo', lambda drive, fid: b'X')
 
     llamadas = []
-    monkeypatch.setattr(debug_agente, 'depurar_documento', lambda client, ab, na, campo, nd, fcs, cfg: llamadas.append(na) or {'nombre_archivo': na})
+    monkeypatch.setattr(debug_agente, 'depurar_documento', lambda client, ab, na, campo, nd, fcs, cfg, poblacion=None: llamadas.append(na) or {'nombre_archivo': na})
 
     resultados = debug_agente.depurar_participante(
         client='fake-client', drive_service=object(), config=_config(),

@@ -48,8 +48,26 @@ def test_cargar_fcs_encuentra_encabezado_aunque_no_este_en_primera_fila():
     ]
     gc = FakeGC({'FCS_ID': FakeSpreadsheet({'CONSOLIDADO': FakeWorksheet(filas)})})
     mapa = cargar_fcs(gc, _config())
-    assert mapa['1010039609'] == {'paquete': 'BÁSICO', 'jco': 'SI'}
-    assert mapa['1020304050'] == {'paquete': 'ESPECIALIZADO', 'jco': 'NO'}
+    # Sin columnas de nombre en este FCS, nombre_completo queda vacío pero la clave existe siempre.
+    assert mapa['1010039609'] == {'paquete': 'BÁSICO', 'jco': 'SI', 'nombre_completo': ''}
+    assert mapa['1020304050'] == {'paquete': 'ESPECIALIZADO', 'jco': 'NO', 'nombre_completo': ''}
+
+
+def test_cargar_fcs_arma_nombre_completo_con_encabezados_reales_multilinea():
+    # Encabezados literales confirmados por Christian el 2026-08-26 — vienen con salto de línea
+    # dentro de la celda, por eso el match debe ser "empieza con" y no igualdad exacta.
+    filas = [
+        [
+            'NUMERO DE DOCUMENTO', 'TIPO DE PAQUETE DE SERVICIO', 'EN RUTA DEL PROGRAMA JOVENES CON OPORTUNIDADES',
+            'NOMBRES \n(NOMBRE 1 Y 2)', 'APELLIDOS \n(APELLIDOS 1 Y 2)', 'APELLIDO 2',
+        ],
+        ['1010039609', 'Básico', 'SI', 'Juan Carlos', 'Pérez', 'Gómez'],
+    ]
+    gc = FakeGC({'FCS_ID': FakeSpreadsheet({'CONSOLIDADO': FakeWorksheet(filas)})})
+    mapa = cargar_fcs(gc, _config())
+    assert mapa['1010039609'] == {
+        'paquete': 'BÁSICO', 'jco': 'SI', 'nombre_completo': 'Juan Carlos Pérez Gómez',
+    }
 
 
 def test_cargar_fcs_pestana_faltante_devuelve_mapa_vacio_con_aviso():
