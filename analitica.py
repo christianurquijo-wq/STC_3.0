@@ -714,8 +714,8 @@ def serie_orientacion_filtrada(general: pd.DataFrame, granularidad: str = "Seman
 # Seguimiento Individual
 # =========================================================
 
-META_VERIFICACION_LINEA = 50   
-META_ORIENTACION_LINEA = 50   
+META_VERIFICACION_LINEA = 17   
+META_ORIENTACION_LINEA = 8   
 META_FORMACION_LINEA = 20      
 
 @st.cache_data(ttl=600)
