@@ -62,7 +62,7 @@ with col_menu:
                 if st.button(wh["etiqueta"], key=f"btn_{wh['id']}"):
                     if wh.get("confirmar"):
                         st.session_state[key_confirmar] = True
-                        st.rerun()
+                        # st.rerun()
                     else:
                         with st.spinner(f"Ejecutando {wh['etiqueta']}..."):
                             exito, mensaje = disparar_webhook(
