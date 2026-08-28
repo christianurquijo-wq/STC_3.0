@@ -654,7 +654,7 @@ with tab6:
                 unsafe_allow_html=True,
             )
         with c_tarjeta:
-            tarjeta(f"{pct_avance_gestor}%", "Avance remisión", "#FD531E")    
+            tarjeta(f"{pct_avance_gestor}%", "Avance remisión", "#1280B0")    
 
     with st.expander("📊 Gestión de documentos (cargados / no cargados)", expanded=True):
         from analitica import (
