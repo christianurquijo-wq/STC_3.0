@@ -357,7 +357,8 @@ def calcular_progreso_ruta(cedula_norm: str, general: pd.DataFrame,
     completado["Orientación"] = reporte in ["FINALIZADO", "FINALIZADO PENDIENTE X REMISIÓN"]
 
     if "Formación" in etapas:
-        completado["Formación"] = str(persona.get("Estado de la formación", "")).strip() == "FINALIZADO"
+        estado_formacion_persona = str(persona.get("Estado de la formación", "")).strip().upper()
+        completado["Formación"] = estado_formacion_persona in ["FINALIZADO", "CERTIFICADO"]
 
     completado["Remisión"] = normalizar_texto(persona.get("Remitido")) == "SI"
     
