@@ -756,7 +756,7 @@ with tab6:
     if f_estado_paquete_pant != "Todos":
         pant_df = pant_df[pant_df["Estado del paquete"] == f_estado_paquete_pant]
 
-    pant_df["Estado de la formación"] = pant_df["Estado de la formación"].fillna("Sin estado")
+    pant_df = pant_df[pant_df["Estado de la formación"].notna() & (pant_df["Estado de la formación"].astype(str).str.strip() != "")]
 
     datos_pant = pant_df.groupby(["Estado del paquete", "Estado de la formación"]).size().reset_index(name="Cantidad")
 
