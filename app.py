@@ -604,6 +604,58 @@ with tab6:
 
     st.subheader("Evidencias documentales para entrega a SDDE")
 
+    with st.expander("📊 Resumen de cumplimiento", expanded=True):
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            control_remision_opciones = ["Todos"] + sorted(matriz["CONTROL DE REMISIÓN"].dropna().unique().tolist())
+            f_control_remision = st.selectbox("Control de Remisión", control_remision_opciones, key="f_control_remision_doc")
+        with c2:
+            entrega_sdde_opciones = ["Todos"] + sorted(matriz["ENTREGA SDDE"].dropna().unique().tolist())
+            f_entrega_sdde = st.selectbox("Entrega SDDE", entrega_sdde_opciones, key="f_entrega_sdde_doc")
+        with c3:
+            entregado_opciones = ["Todos"] + sorted(matriz["ENTREGADO"].dropna().unique().tolist())
+            f_entregado = st.selectbox("Entregado", entregado_opciones, key="f_entregado_doc")
+
+        matriz_filtrada_doc = matriz.copy()
+        if f_control_remision != "Todos":
+            matriz_filtrada_doc = matriz_filtrada_doc[matriz_filtrada_doc["CONTROL DE REMISIÓN"] == f_control_remision]
+        if f_entrega_sdde != "Todos":
+            matriz_filtrada_doc = matriz_filtrada_doc[matriz_filtrada_doc["ENTREGA SDDE"] == f_entrega_sdde]
+        if f_entregado != "Todos":
+            matriz_filtrada_doc = matriz_filtrada_doc[matriz_filtrada_doc["ENTREGADO"] == f_entregado]
+
+        resumen_doc = resumen_cumplimiento_documental(matriz_filtrada_doc)
+        c1, c2, c3, c4 = st.columns(4)
+        with c1: tarjeta(resumen_doc["total"], "Total registros", "#656A71")
+        with c2: tarjeta(resumen_doc["completos"], "100% completos", "#1E8E3E")
+        with c3: tarjeta(resumen_doc["incompletos"], "Con pendientes", "#821F0D")
+        with c4: tarjeta(f"{resumen_doc['promedio']}%", "Promedio cumplimiento", "#FD531E")
+
+        fig_dist = px.bar(resumen_doc["distribucion"], x="% Cumplimiento", y="Cantidad", text="Cantidad")
+        fig_dist.update_traces(marker_color="#FD531E", textposition="outside")
+        fig_dist.update_layout(height=350)
+        st.plotly_chart(fig_dist, use_container_width=True)
+
+        st.divider()
+        st.markdown("#### Avance de remisión al gestor")
+
+        total_lista = len(matriz_filtrada_doc)
+        remitidos_gestor = (matriz_filtrada_doc["ENVIADO AL GESTOR ✓"].astype(str).str.strip().str.upper() == "TRUE").sum()
+        pct_avance_gestor = round((remitidos_gestor / total_lista) * 100, 1) if total_lista else 0
+
+        c_barra, c_tarjeta = st.columns([3, 1])
+        with c_barra:
+            st.markdown(
+                f'<div style="margin-top:20px;">'
+                f'<div style="font-size:13px; color:#656A71; margin-bottom:4px;">Remitidos al gestor: {remitidos_gestor} / {total_lista}</div>'
+                f'<div style="background-color:#EAEAEA; border-radius:4px; height:20px; width:100%;">'
+                f'<div style="background-color:#FD531E; width:{min(pct_avance_gestor,100)}%; height:20px; border-radius:4px;"></div>'
+                f'</div></div>',
+                unsafe_allow_html=True,
+            )
+        with c_tarjeta:
+            tarjeta(f"{pct_avance_gestor}%", "Avance remisión", "#FD531E")    
+
     with st.expander("📊 Gestión de documentos (cargados / no cargados)", expanded=True):
         from analitica import (
             cargar_matriz_documental_con_filas, datos_grafica_documentos,
