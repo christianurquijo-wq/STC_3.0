@@ -671,6 +671,24 @@ with tab6:
         matriz_editable = cargar_matriz_documental_con_filas()
         matriz_editable = matriz_editable[matriz_editable["CÉDULA"].notna() & (matriz_editable["CÉDULA"].astype(str).str.strip() != "")]
 
+        cg1, cg2, cg3 = st.columns(3)
+        with cg1:
+            control_remision_gestion = ["Todos"] + sorted(matriz_editable["CONTROL DE REMISIÓN"].dropna().unique().tolist())
+            f_control_remision_gestion = st.selectbox("Control de Remisión", control_remision_gestion, key="f_control_remision_gestion")
+        with cg2:
+            entrega_sdde_gestion = ["Todos"] + sorted(matriz_editable["ENTREGA SDDE"].dropna().unique().tolist())
+            f_entrega_sdde_gestion = st.selectbox("Entrega SDDE", entrega_sdde_gestion, key="f_entrega_sdde_gestion")
+        with cg3:
+            entregado_gestion = ["Todos"] + sorted(matriz_editable["ENTREGADO"].dropna().unique().tolist())
+            f_entregado_gestion = st.selectbox("Entregado", entregado_gestion, key="f_entregado_gestion")
+
+        if f_control_remision_gestion != "Todos":
+            matriz_editable = matriz_editable[matriz_editable["CONTROL DE REMISIÓN"] == f_control_remision_gestion]
+        if f_entrega_sdde_gestion != "Todos":
+            matriz_editable = matriz_editable[matriz_editable["ENTREGA SDDE"] == f_entrega_sdde_gestion]
+        if f_entregado_gestion != "Todos":
+            matriz_editable = matriz_editable[matriz_editable["ENTREGADO"] == f_entregado_gestion]
+
         datos_grafica = datos_grafica_documentos(matriz_editable)
         fig_docs = px.bar(
             datos_grafica, x="Documento", y="Cantidad", color="Estado",
