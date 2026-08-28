@@ -51,7 +51,7 @@ with col_menu:
     with st.popover("Acciones", use_container_width=True):
         st.markdown("**Webhooks**")
 
-        from webhooks import disparar_webhook, WEBHOOKS_REGISTRADOS
+        from webhooks import disparar_webhook, WEBHOOKS_REGISTRADOS, validar_clave
 
         for wh in WEBHOOKS_REGISTRADOS:
             key_confirmar = f"confirmar_{wh['id']}"
@@ -74,18 +74,22 @@ with col_menu:
                             st.error(mensaje)
             else:
                 st.warning(wh.get("mensaje_confirmacion", "¿Confirmas ejecutar esta acción?"))
+                clave_ingresada = st.text_input("Contraseña de autorización", type="password", key=f"clave_{wh['id']}")
                 c1, c2 = st.columns(2)
                 with c1:
                     if st.button("✅ Sí", key=f"si_{wh['id']}"):
-                        with st.spinner(f"Ejecutando {wh['etiqueta']}..."):
-                            exito, mensaje = disparar_webhook(
-                                wh["url_env"], wh["header_nombre_env"], wh["header_valor_env"]
-                            )
-                        st.session_state[key_confirmar] = False
-                        if exito:
-                            st.success(mensaje)
+                        if not validar_clave(clave_ingresada):
+                            st.error("Contraseña incorrecta.")
                         else:
-                            st.error(mensaje)
+                            with st.spinner(f"Ejecutando {wh['etiqueta']}..."):
+                                exito, mensaje = disparar_webhook(
+                                    wh["url_env"], wh["header_nombre_env"], wh["header_valor_env"]
+                                )
+                            st.session_state[key_confirmar] = False
+                            if exito:
+                                st.success(mensaje)
+                            else:
+                                st.error(mensaje)
                 with c2:
                     if st.button("❌ No", key=f"no_{wh['id']}"):
                         st.session_state[key_confirmar] = False
@@ -857,16 +861,20 @@ with tab6:
         else:
             st.warning(accion["mensaje_confirmacion"])
             cgp1, cgp2 = st.columns(2)
+            clave_ingresada_pant = st.text_input("Contraseña de autorización", type="password", key=f"clave_pant_{accion['id']}")
             with cgp1:
                 if st.button("✅ Sí", key=f"si_pant_{accion['id']}"):
-                    with st.spinner(f"Ejecutando {accion['etiqueta']}..."):
-                        exito, mensaje = disparar_workflow(accion["repo"], accion["workflow_file"])
-                    st.session_state[key_confirmar_pant] = False
-                    if exito:
-                        st.success(mensaje)
+                    if not validar_clave(clave_ingresada_pant):
+                        st.error("Contraseña incorrecta.")
                     else:
-                        st.error(mensaje)
-                    st.rerun()
+                        with st.spinner(f"Ejecutando {accion['etiqueta']}..."):
+                            exito, mensaje = disparar_workflow(accion["repo"], accion["workflow_file"])
+                        st.session_state[key_confirmar_pant] = False
+                        if exito:
+                            st.toast(mensaje, icon="✅")
+                        else:
+                            st.toast(mensaje, icon="❌")
+                        st.rerun()
             with cgp2:
                 if st.button("❌ No", key=f"no_pant_{accion['id']}"):
                     st.session_state[key_confirmar_pant] = False

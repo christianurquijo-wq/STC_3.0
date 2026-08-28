@@ -6,12 +6,23 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+def _obtener_clave_acciones():
+    try:
+        return st.secrets["CLAVE_ACCIONES"]
+    except Exception:
+        return os.getenv("CLAVE_ACCIONES")
+
+def validar_clave(clave_ingresada: str) -> bool:
+    clave_real = _obtener_clave_acciones()
+    if not clave_real:
+        return False
+    return clave_ingresada == clave_real
+
 def _obtener_secreto(nombre_env: str):
     try:
         return st.secrets[nombre_env]
     except Exception:
         return os.getenv(nombre_env)
-
 
 def disparar_webhook(url_env: str, header_nombre_env: str = None, header_valor_env: str = None) -> tuple:
     url = _obtener_secreto(url_env)
