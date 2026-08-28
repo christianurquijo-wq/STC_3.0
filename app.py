@@ -627,9 +627,9 @@ with tab6:
         resumen_doc = resumen_cumplimiento_documental(matriz_filtrada_doc)
         c1, c2, c3, c4 = st.columns(4)
         with c1: tarjeta(resumen_doc["total"], "Total registros", "#656A71")
-        with c2: tarjeta(resumen_doc["completos"], "100% completos", "#1E8E3E")
+        with c2: tarjeta(resumen_doc["completos"], "100% completos", "#1280B0")
         with c3: tarjeta(resumen_doc["incompletos"], "Con pendientes", "#821F0D")
-        with c4: tarjeta(f"{resumen_doc['promedio']}%", "Promedio cumplimiento", "#FD531E")
+        # with c4: tarjeta(f"{resumen_doc['promedio']}%", "Promedio cumplimiento", "#FD531E")
 
         fig_dist = px.bar(resumen_doc["distribucion"], x="% Cumplimiento", y="Cantidad", text="Cantidad")
         fig_dist.update_traces(marker_color="#FD531E", textposition="outside")
