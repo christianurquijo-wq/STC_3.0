@@ -625,7 +625,7 @@ with tab6:
             matriz_filtrada_doc = matriz_filtrada_doc[matriz_filtrada_doc["ENTREGADO"] == f_entregado]
 
         resumen_doc = resumen_cumplimiento_documental(matriz_filtrada_doc)
-        c1, c2, c3, c4 = st.columns(4)
+        c1, c2, c3 = st.columns(3)
         with c1: tarjeta(resumen_doc["total"], "Total registros", "#656A71")
         with c2: tarjeta(resumen_doc["completos"], "100% completos", "#1280B0")
         with c3: tarjeta(resumen_doc["incompletos"], "Con pendientes", "#821F0D")
