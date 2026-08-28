@@ -18,6 +18,7 @@ try:
 except ImportError:
     pass
 
+from webhooks import validar_clave
 from agente_config import CONFIG
 from google_clients import obtener_credenciales, obtener_cliente_sheets, obtener_servicio_drive
 import revision
@@ -31,7 +32,11 @@ st.caption(
     f'Agente IA: {"activado" if CONFIG.USAR_AGENTE_IA else "desactivado"} (modelo {CONFIG.MODELO_GEMINI})'
 )
 
+clave_revision = st.text_input('Contraseña de autorización', type='password', key='clave_ejecutar_revision')
 if st.button('▶ Ejecutar revisión', type='primary'):
+    if not validar_clave(clave_revision):
+        st.error('Contraseña incorrecta.')
+        st.stop()
     with st.spinner('Revisando documentos… esto puede tardar varios minutos si el agente IA está activado.'):
         try:
             credenciales = obtener_credenciales()
@@ -53,7 +58,11 @@ if st.button('▶ Ejecutar revisión', type='primary'):
                     st.dataframe(resultado['filas_resumen'])
 
 st.divider()
+clave_diagnostico = st.text_input('Contraseña de autorización', type='password', key='clave_diagnostico_agente')
 if st.button('🔧 Diagnóstico del agente IA (probar un solo archivo)'):
+    if not validar_clave(clave_diagnostico):
+        st.error('Contraseña incorrecta.')
+        st.stop()
     from diagnostico import buscar_primer_pdf
 
     with st.spinner('Probando conexión con Drive, Sheets y el agente IA…'):
@@ -90,7 +99,11 @@ if st.button('🔧 Diagnóstico del agente IA (probar un solo archivo)'):
                     st.json(resultado['datos'])
 
 st.divider()
+clave_consumo = st.text_input('Contraseña de autorización', type='password', key='clave_estimar_consumo')
 if st.button('📊 Estimar consumo mensual'):
+    if not validar_clave(clave_consumo):
+        st.error('Contraseña incorrecta.')
+        st.stop()
     from consumo import estimar_consumo_mensual
     from google_clients import obtener_cliente_sheets, obtener_credenciales, obtener_o_crear_hoja
 

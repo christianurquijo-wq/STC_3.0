@@ -19,6 +19,7 @@ los necesitas desde ahí mismo, sin cambiar de pestaña.
 import pandas as pd
 import streamlit as st
 
+from webhooks import validar_clave
 from agente_config import CAMPOS_PLATAFORMA, CONFIG
 from google_clients import (
     obtener_cliente_sheets, obtener_credenciales, obtener_o_crear_hoja, obtener_servicio_drive,
@@ -188,7 +189,11 @@ def render():
             'a la pestaña "Diccionario" del Sheet de reporte.'
         )
 
+        clave_escanear = st.text_input('Contraseña de autorización', type='password', key='clave_dicc_escanear')
         if st.button('🔍 1. Escanear Drive y detectar nombres nuevos', key='dicc_escanear'):
+            if not validar_clave(clave_escanear):
+                st.error('Contraseña incorrecta.')
+                st.stop()
             import diccionario as diccionario_mod
             import sugerencias_diccionario as sug_mod
             with st.spinner('Recorriendo Drive completo — puede tardar varios minutos si hay muchos archivos…'):
@@ -213,7 +218,11 @@ def render():
                 use_container_width=True, hide_index=True,
             )
 
+            clave_sugerir = st.text_input('Contraseña de autorización', type='password', key='clave_dicc_sugerir')
             if st.button('🤖 2. Pedir sugerencia de mapeo a Gemini', key='dicc_sugerir'):
+                if not validar_clave(clave_sugerir):
+                    st.error('Contraseña incorrecta.')
+                    st.stop()
                 import agente
                 import sugerencias_diccionario as sug_mod
                 with st.spinner('Consultando al agente IA (una sola llamada, sin abrir PDFs)…'):
@@ -251,7 +260,11 @@ def render():
                 hide_index=True, use_container_width=True, key='dicc_editor',
             )
 
+            clave_aplicar = st.text_input('Contraseña de autorización', type='password', key='clave_dicc_aplicar')
             if st.button('✅ 3. Aplicar aprobados al Diccionario', type='primary', key='dicc_aplicar'):
+                if not validar_clave(clave_aplicar):
+                    st.error('Contraseña incorrecta.')
+                    st.stop()
                 import diccionario as diccionario_mod
                 aprobados = df_editado[df_editado['aprobar'] & (df_editado['campo_sugerido'] != 'NO_RECONOCIDO')]
                 entradas = [
@@ -287,7 +300,11 @@ def render():
 
     cedula_debug = st.text_input('Número de documento a revisar', key='debug_cedula')
 
+    clave_debug = st.text_input('Contraseña de autorización', type='password', key='clave_debug_ejecutar')
     if st.button('🔬 Ejecutar diagnóstico detallado', key='debug_ejecutar'):
+        if not validar_clave(clave_debug):
+            st.error('Contraseña incorrecta.')
+            st.stop()
         import agente
         import debug_agente
         import diccionario as diccionario_mod
