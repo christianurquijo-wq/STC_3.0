@@ -647,9 +647,9 @@ with tab6:
         with c_barra:
             st.markdown(
                 f'<div style="margin-top:20px;">'
-                f'<div style="font-size:13px; color:#1280B0; margin-bottom:4px;">Remitidos al gestor: {remitidos_gestor} / {total_lista}</div>'
+                f'<div style="font-size:13px; color:#292929; margin-bottom:4px;">Remitidos al gestor: {remitidos_gestor} / {total_lista}</div>'
                 f'<div style="background-color:#EAEAEA; border-radius:4px; height:20px; width:100%;">'
-                f'<div style="background-color:#FD531E; width:{min(pct_avance_gestor,100)}%; height:20px; border-radius:4px;"></div>'
+                f'<div style="background-color:#1280B0; width:{min(pct_avance_gestor,100)}%; height:20px; border-radius:4px;"></div>'
                 f'</div></div>',
                 unsafe_allow_html=True,
             )
