@@ -738,30 +738,30 @@ with tab6:
         f_pantallazos = cargar_todo_cache()
     general_pant = f_pantallazos["general"]
 
+    general_pant = general_pant.copy()
+    tiene_link = general_pant["Paquete de pantallazos"].notna() & (general_pant["Paquete de pantallazos"].astype(str).str.strip() != "")
+    general_pant["Estado del paquete"] = tiene_link.map({True: "Paquete creado", False: "Sin paquete creado"})
+
     col_p1, col_p2 = st.columns(2)
     with col_p1:
         estados_formacion_pant = ["Todos"] + sorted(general_pant["Estado de la formación"].dropna().unique().tolist())
         f_estado_form_pant = st.selectbox("Estado de la formación", estados_formacion_pant, key="filtro_estado_form_pant")
     with col_p2:
-        estados_paquete_pant = ["Todos"] + sorted(general_pant["Paquete de pantallazos"].dropna().unique().tolist())
-        f_estado_paquete_pant = st.selectbox("Estado del paquete de pantallazos", estados_paquete_pant, key="filtro_estado_paquete_pant")
+        f_estado_paquete_pant = st.selectbox("Estado del paquete de pantallazos", ["Todos", "Paquete creado", "Sin paquete creado"], key="filtro_estado_paquete_pant")
 
-    pant_df = general_pant[
-        general_pant["Paquete de pantallazos"].notna()
-        & (general_pant["Paquete de pantallazos"].astype(str).str.strip() != "")
-    ].copy()
+    pant_df = general_pant.copy()
 
     if f_estado_form_pant != "Todos":
         pant_df = pant_df[pant_df["Estado de la formación"] == f_estado_form_pant]
     if f_estado_paquete_pant != "Todos":
-        pant_df = pant_df[pant_df["Paquete de pantallazos"] == f_estado_paquete_pant]
+        pant_df = pant_df[pant_df["Estado del paquete"] == f_estado_paquete_pant]
 
     pant_df["Estado de la formación"] = pant_df["Estado de la formación"].fillna("Sin estado")
 
-    datos_pant = pant_df.groupby(["Paquete de pantallazos", "Estado de la formación"]).size().reset_index(name="Cantidad")
+    datos_pant = pant_df.groupby(["Estado del paquete", "Estado de la formación"]).size().reset_index(name="Cantidad")
 
     fig_pant = px.bar(
-        datos_pant, x="Paquete de pantallazos", y="Cantidad", color="Estado de la formación",
+        datos_pant, x="Estado del paquete", y="Cantidad", color="Estado de la formación",
         custom_data=["Estado de la formación"], barmode="stack", text="Cantidad",
     )
     fig_pant.update_layout(height=450, xaxis_tickangle=-20)
@@ -778,7 +778,7 @@ with tab6:
         estado_form_clic = puntos_pant[0]["customdata"][0]
         st.info(f"Filtrando por: **{paquete_clic}** — {estado_form_clic}")
         detalle_pant = pant_df[
-            (pant_df["Paquete de pantallazos"] == paquete_clic)
+            (pant_df["Estado del paquete"] == paquete_clic)
             & (pant_df["Estado de la formación"] == estado_form_clic)
         ]
     else:
