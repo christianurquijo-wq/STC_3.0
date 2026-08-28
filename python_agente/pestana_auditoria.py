@@ -16,16 +16,53 @@ métricas, las 3 tablas con filtros básicos, y un expander con los mismos 3
 botones de acción (Ejecutar revisión / Diagnóstico / Estimar consumo) por si
 los necesitas desde ahí mismo, sin cambiar de pestaña.
 """
+import hmac
+
 import pandas as pd
 import streamlit as st
 
-from webhooks import validar_clave
 from agente_config import CAMPOS_PLATAFORMA, CONFIG
 from google_clients import (
     obtener_cliente_sheets, obtener_credenciales, obtener_o_crear_hoja, obtener_servicio_drive,
 )
 
 ESTADOS = ('Verificado', 'Con novedad', 'No encontrado')
+
+
+def _verificar_acceso() -> bool:
+    """
+    Gate de contraseña para TODA la pestaña de Auditoría — no solo los
+    botones de acción (que gastan tokens y escriben en el Sheet), sino
+    también el resumen/hallazgos de solo lectura, porque traen datos
+    personales de participantes reales del programa.
+
+    La clave vive en Secrets de Streamlit (AUDITORIA_PASSWORD) — nunca en
+    el código ni en el repo. Se recuerda por sesión de navegador
+    (st.session_state): no hay que reingresarla en cada rerun de la pestaña,
+    pero sí al abrir una pestaña/sesión nueva.
+    """
+    if st.session_state.get('auditoria_autenticado'):
+        return True
+
+    st.subheader('🔒 Auditoría de calidad — acceso protegido')
+
+    clave_correcta = st.secrets.get('AUDITORIA_PASSWORD')
+    if not clave_correcta:
+        st.error(
+            'Falta configurar `AUDITORIA_PASSWORD` en Secrets de Streamlit — sin eso, esta pestaña '
+            'no se puede proteger con contraseña. Agrégala en Settings → Secrets (Streamlit Cloud) '
+            'o en `.streamlit/secrets.toml` (local) y recarga la app.'
+        )
+        return False
+
+    clave_ingresada = st.text_input('Contraseña', type='password', key='auditoria_clave_input')
+    if st.button('Ingresar', key='auditoria_clave_boton'):
+        if clave_ingresada and hmac.compare_digest(clave_ingresada, str(clave_correcta)):
+            st.session_state['auditoria_autenticado'] = True
+            st.rerun()
+        else:
+            st.error('Contraseña incorrecta.')
+    return False
 
 
 def _leer_hoja_como_df(ss, nombre_hoja: str) -> pd.DataFrame:
@@ -68,6 +105,9 @@ def _fila_tiene_novedad(fila, campos_presentes) -> bool:
 
 
 def render():
+    if not _verificar_acceso():
+        return
+
     st.subheader('🔍 Auditoría de calidad documental — STC 3.0')
 
     try:
@@ -189,11 +229,7 @@ def render():
             'a la pestaña "Diccionario" del Sheet de reporte.'
         )
 
-        clave_escanear = st.text_input('Contraseña de autorización', type='password', key='clave_dicc_escanear')
         if st.button('🔍 1. Escanear Drive y detectar nombres nuevos', key='dicc_escanear'):
-            if not validar_clave(clave_escanear):
-                st.error('Contraseña incorrecta.')
-                st.stop()
             import diccionario as diccionario_mod
             import sugerencias_diccionario as sug_mod
             with st.spinner('Recorriendo Drive completo — puede tardar varios minutos si hay muchos archivos…'):
@@ -218,11 +254,7 @@ def render():
                 use_container_width=True, hide_index=True,
             )
 
-            clave_sugerir = st.text_input('Contraseña de autorización', type='password', key='clave_dicc_sugerir')
             if st.button('🤖 2. Pedir sugerencia de mapeo a Gemini', key='dicc_sugerir'):
-                if not validar_clave(clave_sugerir):
-                    st.error('Contraseña incorrecta.')
-                    st.stop()
                 import agente
                 import sugerencias_diccionario as sug_mod
                 with st.spinner('Consultando al agente IA (una sola llamada, sin abrir PDFs)…'):
@@ -260,11 +292,7 @@ def render():
                 hide_index=True, use_container_width=True, key='dicc_editor',
             )
 
-            clave_aplicar = st.text_input('Contraseña de autorización', type='password', key='clave_dicc_aplicar')
             if st.button('✅ 3. Aplicar aprobados al Diccionario', type='primary', key='dicc_aplicar'):
-                if not validar_clave(clave_aplicar):
-                    st.error('Contraseña incorrecta.')
-                    st.stop()
                 import diccionario as diccionario_mod
                 aprobados = df_editado[df_editado['aprobar'] & (df_editado['campo_sugerido'] != 'NO_RECONOCIDO')]
                 entradas = [
@@ -300,11 +328,7 @@ def render():
 
     cedula_debug = st.text_input('Número de documento a revisar', key='debug_cedula')
 
-    clave_debug = st.text_input('Contraseña de autorización', type='password', key='clave_debug_ejecutar')
     if st.button('🔬 Ejecutar diagnóstico detallado', key='debug_ejecutar'):
-        if not validar_clave(clave_debug):
-            st.error('Contraseña incorrecta.')
-            st.stop()
         import agente
         import debug_agente
         import diccionario as diccionario_mod
