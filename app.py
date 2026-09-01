@@ -774,12 +774,12 @@ with tab6:
                 st.cache_data.clear()
                 st.rerun()
 
-    with st.expander("🔍 Consulta por cédula", expanded=False):
-            cc_matriz = st.text_input("Buscar por CC (parcial o completo)", key="cc_matriz_doc")
-            if cc_matriz:
-                resultado_matriz = matriz[matriz["cedula_norm"].str.contains(cc_matriz, na=False)]
-                st.write(f"**{len(resultado_matriz)} personas encontradas**")
-                st.dataframe(resultado_matriz.drop(columns=["cedula_norm", "% CUMPLIMIENTO_num"]), use_container_width=True)
+    # with st.expander("🔍 Consulta por cédula", expanded=False):
+            # cc_matriz = st.text_input("Buscar por CC (parcial o completo)", key="cc_matriz_doc")
+            # if cc_matriz:
+                # resultado_matriz = matriz[matriz["cedula_norm"].str.contains(cc_matriz, na=False)]
+                # st.write(f"**{len(resultado_matriz)} personas encontradas**")
+                # st.dataframe(resultado_matriz.drop(columns=["cedula_norm", "% CUMPLIMIENTO_num"]), use_container_width=True)
 
     with st.expander("📦 Estado de remisión al gestor", expanded=False):
         estado_remision = resumen_estado_remision(matriz)
