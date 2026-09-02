@@ -4,12 +4,17 @@ st.set_page_config(page_title="Control STC 3.0", layout="wide")
 
 import pandas as pd
 import plotly.express as px
+from analitica import (
+            cargar_matriz_documental_con_filas, datos_grafica_documentos,
+            tabla_editable_documentos, es_valor_verdadero, COLUMNAS_REQUISITOS,
+        )
+from sheets_write import marcar_documento_cargado
+from config import FUENTES
 from analitica import carga_personalizada
 from cargar_datos import cargar_fuente
 from normalizador import normalizar_columna_cedula
 from column_mapping import CAMPO_ENTREGADO, MAPEO_CEDULA
 from analitica import serie_orientacion_filtrada
-# --- Auditoría de calidad (agente IA en Python) ---
 import sys, os
 _RUTA_PYTHON_AGENTE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "python_agente")
 sys.path.insert(0, _RUTA_PYTHON_AGENTE)
@@ -638,7 +643,64 @@ with tab6:
         fig_dist = px.bar(resumen_doc["distribucion"], x="% Cumplimiento", y="Cantidad", text="Cantidad")
         fig_dist.update_traces(marker_color="#FD531E", textposition="outside")
         fig_dist.update_layout(height=350)
-        st.plotly_chart(fig_dist, use_container_width=True)
+
+        evento_dist = st.plotly_chart(
+            fig_dist, use_container_width=True,
+            on_select="rerun", selection_mode="points", key="grafica_cumplimiento_dist",
+        )
+
+        puntos_dist = evento_dist.get("selection", {}).get("points", []) if evento_dist else []
+
+        if puntos_dist:
+            pct_clic = puntos_dist[0]["x"]
+            st.info(f"Filtrando por % Cumplimiento: **{pct_clic}%**")
+            matriz_seccion1 = matriz_filtrada_doc[matriz_filtrada_doc["% CUMPLIMIENTO_num"] == pct_clic]
+        else:
+            matriz_seccion1 = matriz_filtrada_doc
+
+        st.write(f"**{len(matriz_seccion1)} personas**")
+
+        tabla_seccion1 = tabla_editable_documentos(matriz_seccion1)
+
+        column_config_seccion1 = {
+            "fila_sheet": None,
+            "CÉDULA": st.column_config.TextColumn(disabled=True),
+            "NOMBRE COMPLETO": st.column_config.TextColumn(disabled=True),
+            "PAQUETE": st.column_config.TextColumn(disabled=True),
+        }
+        for col in COLUMNAS_REQUISITOS:
+            nombre_corto = col.replace(" ✓", "")
+            column_config_seccion1[nombre_corto] = st.column_config.CheckboxColumn(nombre_corto)
+
+        st.data_editor(
+            tabla_seccion1,
+            column_config=column_config_seccion1,
+            hide_index=True,
+            key="editor_documentos_seccion1",
+            use_container_width=True,
+        )
+
+        cambios_seccion1 = st.session_state.get("editor_documentos_seccion1", {}).get("edited_rows", {})
+        if cambios_seccion1:
+            doc_column_map_seccion1 = {c.replace(" ✓", ""): c for c in COLUMNAS_REQUISITOS}
+            spreadsheet_id_seccion1 = FUENTES["matriz_documental"]["id"]
+            hubo_error_seccion1 = False
+            for fila_idx, cambios_columna in cambios_seccion1.items():
+                fila_sheet_real = int(tabla_seccion1.iloc[int(fila_idx)]["fila_sheet"])
+                for nombre_corto, nuevo_valor in cambios_columna.items():
+                    columna_real = doc_column_map_seccion1.get(nombre_corto)
+                    if columna_real:
+                        columna_indice = matriz.columns.get_loc(columna_real)
+                        exito, mensaje = marcar_documento_cargado(
+                            spreadsheet_id_seccion1, "MATRIZ DOCUMENTAL", fila_sheet_real, columna_indice, bool(nuevo_valor)
+                        )
+                        if not exito:
+                            hubo_error_seccion1 = True
+                            st.error(mensaje)
+            if not hubo_error_seccion1:
+                st.success("Cambios guardados correctamente.")
+                st.cache_data.clear()
+                st.rerun()
 
         st.divider()
         st.markdown("#### Avance de remisión al gestor")
@@ -661,12 +723,6 @@ with tab6:
             tarjeta(f"{pct_avance_gestor}%", "Avance remisión", "#1280B0")    
 
     with st.expander("📊 Gestión de documentos (cargados / no cargados)", expanded=True):
-        from analitica import (
-            cargar_matriz_documental_con_filas, datos_grafica_documentos,
-            tabla_editable_documentos, es_valor_verdadero, COLUMNAS_REQUISITOS,
-        )
-        from sheets_write import marcar_documento_cargado
-        from config import FUENTES
 
         matriz_editable = cargar_matriz_documental_con_filas()
         matriz_editable = matriz_editable[matriz_editable["CÉDULA"].notna() & (matriz_editable["CÉDULA"].astype(str).str.strip() != "")]
