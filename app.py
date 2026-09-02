@@ -284,7 +284,8 @@ with tab3:
     with carga_personalizada("Cargando análisis de datos..."):
         f_tab3 = cargar_todo_cache()
 
-    st.markdown("#### Filtros")
+    st.subheader("Resumen de inconsistencias por caso")
+
     fc1, fc2, fc3 = st.columns(3)
     with fc1:
         momentos_bu_tab3 = sorted(f_tab3["general"]["Momento del proceso (Back UP)"].dropna().unique().tolist())
@@ -315,8 +316,6 @@ with tab3:
 
     with carga_personalizada("Cargando subsanaciones..."):
         subsanaciones, _ = _cargar_fuente_sub("subsanaciones")
-
-    st.subheader("📝 Subsanaciones pendientes (Orientación)")
 
     conteo_orientador = subsanaciones["Orientador/a"].value_counts().reset_index()
     conteo_orientador.columns = ["Orientador/a", "Cantidad"]
