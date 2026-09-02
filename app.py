@@ -283,7 +283,32 @@ with tab3:
 
     with carga_personalizada("Cargando análisis de datos..."):
         f_tab3 = cargar_todo_cache()
-        resumen = generar_resumen(f_tab3)
+
+    st.markdown("#### Filtros")
+    fc1, fc2, fc3 = st.columns(3)
+    with fc1:
+        momentos_bu_tab3 = sorted(f_tab3["general"]["Momento del proceso (Back UP)"].dropna().unique().tolist())
+        f_momento_bu_tab3 = st.multiselect("Momento del proceso (Back UP)", momentos_bu_tab3, key="f_momento_bu_tab3")
+    with fc2:
+        hitos_tab3 = sorted(f_tab3["general"]["Hito"].dropna().unique().tolist())
+        f_hito_tab3 = st.multiselect("Hito", hitos_tab3, key="f_hito_tab3")
+    with fc3:
+        paquetes_tab3 = sorted(f_tab3["general"]["Paquete"].dropna().unique().tolist())
+        f_paquete_tab3 = st.multiselect("Paquete", paquetes_tab3, key="f_paquete_tab3")
+
+    general_filtrado_tab3 = f_tab3["general"].copy()
+    if f_momento_bu_tab3:
+        general_filtrado_tab3 = general_filtrado_tab3[general_filtrado_tab3["Momento del proceso (Back UP)"].isin(f_momento_bu_tab3)]
+    if f_hito_tab3:
+        general_filtrado_tab3 = general_filtrado_tab3[general_filtrado_tab3["Hito"].isin(f_hito_tab3)]
+    if f_paquete_tab3:
+        general_filtrado_tab3 = general_filtrado_tab3[general_filtrado_tab3["Paquete"].isin(f_paquete_tab3)]
+
+    f_tab3_filtrado = dict(f_tab3)
+    f_tab3_filtrado["general"] = general_filtrado_tab3
+
+    with carga_personalizada("Calculando análisis..."):
+        resumen = generar_resumen(f_tab3_filtrado)
         vacios = campos_vacios_fcs(f_tab3["orientacion_consolidado"])
 
     from cargar_datos import cargar_fuente as _cargar_fuente_sub
