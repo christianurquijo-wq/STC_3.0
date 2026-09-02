@@ -614,18 +614,21 @@ with tab6:
     st.subheader("Evidencias documentales para entrega a SDDE")
 
     with st.expander("📊 Resumen de cumplimiento", expanded=True):
+        from analitica import cargar_matriz_documental_con_filas
+        matriz_con_filas = cargar_matriz_documental_con_filas()
+        matriz_con_filas = matriz_con_filas[matriz_con_filas["CÉDULA"].notna() & (matriz_con_filas["CÉDULA"].astype(str).str.strip() != "")]
         c1, c2, c3 = st.columns(3)
         with c1:
-            control_remision_opciones = ["Todos"] + sorted(matriz["CONTROL DE REMISIÓN"].dropna().unique().tolist())
+            control_remision_opciones = ["Todos"] + sorted(matriz_con_filas["CONTROL DE REMISIÓN"].dropna().unique().tolist())
             f_control_remision = st.selectbox("Control de Remisión", control_remision_opciones, key="f_control_remision_doc")
         with c2:
-            entrega_sdde_opciones = ["Todos"] + sorted(matriz["ENTREGA SDDE"].dropna().unique().tolist())
+            entrega_sdde_opciones = ["Todos"] + sorted(matriz_con_filas["ENTREGA SDDE"].dropna().unique().tolist())
             f_entrega_sdde = st.selectbox("Entrega SDDE", entrega_sdde_opciones, key="f_entrega_sdde_doc")
         with c3:
-            entregado_opciones = ["Todos"] + sorted(matriz["ENTREGADO"].dropna().unique().tolist())
+            entregado_opciones = ["Todos"] + sorted(matriz_con_filas["ENTREGADO"].dropna().unique().tolist())
             f_entregado = st.selectbox("Entregado", entregado_opciones, key="f_entregado_doc")
 
-        matriz_filtrada_doc = matriz.copy()
+        matriz_filtrada_doc = matriz_con_filas.copy()
         if f_control_remision != "Todos":
             matriz_filtrada_doc = matriz_filtrada_doc[matriz_filtrada_doc["CONTROL DE REMISIÓN"] == f_control_remision]
         if f_entrega_sdde != "Todos":
