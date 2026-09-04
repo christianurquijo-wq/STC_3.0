@@ -411,26 +411,6 @@ with tab3:
     csv_completo = detalle_fcs_completo.to_csv(index=False, encoding="utf-8-sig")
     st.download_button("⬇️ Descargar todos (CSV)", csv_completo, "fcs_todos_los_vacios.csv", "text/csv")
 
-    st.divider()
-    st.markdown("### Detalle por campo específico (clic en una barra)")
-
-    puntos_vacios = evento_vacios.get("selection", {}).get("points", []) if evento_vacios else []
-    if puntos_vacios:
-        campo_clic = puntos_vacios[0]["y"]
-        st.markdown(f"### Cédulas con '{campo_clic}' vacío")
-
-        cedulas_con_vacio = vacios[vacios["campo_vacio"] == campo_clic]["cedula"].astype(str).tolist()
-        detalle_fcs = f_tab3["orientacion_consolidado"][
-            f_tab3["orientacion_consolidado"]["NÚMERO DE DOCUMENTO"].astype(str).isin(cedulas_con_vacio)
-        ]
-
-        st.write(f"**{len(detalle_fcs)} registros**")
-        st.dataframe(detalle_fcs, use_container_width=True)
-        csv_vacio = detalle_fcs.to_csv(index=False, encoding="utf-8-sig")
-        st.download_button("⬇️ Descargar FCS completo (CSV)", csv_vacio, f"fcs_vacios_{campo_clic}.csv", "text/csv")
-    else:
-        st.info("Haz clic en una barra para ver el FCS completo de las cédulas con ese campo vacío.")
-
 # =========================================================
 # TAB 4: Overview
 # =========================================================
