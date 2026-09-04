@@ -398,6 +398,22 @@ with tab3:
         on_select="rerun", selection_mode="points", key="grafica_vacios",
     )
 
+    st.divider()
+    st.markdown("### FCS completo — todas las cédulas con al menos un campo vacío")
+
+    cedulas_todas_vacias = vacios["cedula"].astype(str).unique().tolist()
+    detalle_fcs_completo = f_tab3["orientacion_consolidado"][
+        f_tab3["orientacion_consolidado"]["NÚMERO DE DOCUMENTO"].astype(str).isin(cedulas_todas_vacias)
+    ]
+
+    st.write(f"**{len(detalle_fcs_completo)} registros con al menos un campo vacío**")
+    st.dataframe(detalle_fcs_completo, use_container_width=True)
+    csv_completo = detalle_fcs_completo.to_csv(index=False, encoding="utf-8-sig")
+    st.download_button("⬇️ Descargar todos (CSV)", csv_completo, "fcs_todos_los_vacios.csv", "text/csv")
+
+    st.divider()
+    st.markdown("### Detalle por campo específico (clic en una barra)")
+
     puntos_vacios = evento_vacios.get("selection", {}).get("points", []) if evento_vacios else []
     if puntos_vacios:
         campo_clic = puntos_vacios[0]["y"]
