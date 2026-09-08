@@ -112,12 +112,12 @@ def campos_vacios_fcs(orientacion: pd.DataFrame) -> pd.DataFrame:
     ]
 
     registros = []
-    for _, fila in orientacion.iterrows():
+    for idx, fila in orientacion.iterrows():
         cedula = fila.get("NÚMERO DE DOCUMENTO", "SIN CÉDULA")
         for col in columnas_auditar:
             valor = fila.get(col)
             if pd.isna(valor) or str(valor).strip() == "":
-                registros.append({"cedula": cedula, "campo_vacio": col})
+                registros.append({"indice_fila": idx, "cedula": cedula, "campo_vacio": col})
 
     return pd.DataFrame(registros)
 

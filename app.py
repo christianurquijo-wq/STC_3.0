@@ -405,14 +405,12 @@ with tab3:
     if puntos_vacios:
         campo_clic = puntos_vacios[0]["y"]
         st.markdown(f"### Cédulas con '{campo_clic}' vacío")
-        cedulas_filtro_vacio = vacios[vacios["campo_vacio"] == campo_clic]["cedula"].astype(str).tolist()
+        indices_filtro_vacio = vacios[vacios["campo_vacio"] == campo_clic]["indice_fila"].tolist()
     else:
         st.markdown("### FCS completo — todas las cédulas con al menos un campo vacío")
-        cedulas_filtro_vacio = vacios["cedula"].astype(str).unique().tolist()
+        indices_filtro_vacio = vacios["indice_fila"].unique().tolist()
 
-    detalle_fcs_completo = f_tab3["orientacion_consolidado"][
-        f_tab3["orientacion_consolidado"]["NÚMERO DE DOCUMENTO"].astype(str).isin(cedulas_filtro_vacio)
-    ]
+    detalle_fcs_completo = f_tab3["orientacion_consolidado"].loc[indices_filtro_vacio]
 
     st.write(f"**{len(detalle_fcs_completo)} registros**")
     st.dataframe(detalle_fcs_completo, use_container_width=True)
