@@ -33,3 +33,37 @@ def disparar_workflow(repo: str, workflow_file: str, rama: str = "main") -> tupl
         return False, f"GitHub respondió con código {resp.status_code}: {resp.text}"
     except Exception as e:
         return False, f"Error al conectar con GitHub: {e}"
+
+import time as _time
+
+def _headers():
+    token = _obtener_token()
+    return {"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"}
+
+
+def obtener_ultima_ejecucion(repo: str, workflow_file: str, disparado_despues: float) -> dict:
+    """Busca la ejecución más reciente del workflow creada después del timestamp dado."""
+    url = f"https://api.github.com/repos/{repo}/actions/workflows/{workflow_file}/runs"
+    try:
+        resp = requests.get(url, headers=_headers(), params={"per_page": 5}, timeout=15)
+        if resp.status_code != 200:
+            return {"encontrada": False, "error": f"Código {resp.status_code}"}
+        runs = resp.json().get("workflow_runs", [])
+        for run in runs:
+            creado = pd_to_timestamp(run["created_at"])
+            if creado >= disparado_despues - 10:  # margen de 10s por desfase de reloj
+                return {
+                    "encontrada": True,
+                    "status": run["status"],           # queued / in_progress / completed
+                    "conclusion": run["conclusion"],    # success / failure / None
+                    "url": run["html_url"],
+                }
+        return {"encontrada": False}
+    except Exception as e:
+        return {"encontrada": False, "error": str(e)}
+
+
+def pd_to_timestamp(fecha_iso: str) -> float:
+    import datetime
+    dt = datetime.datetime.strptime(fecha_iso, "%Y-%m-%dT%H:%M:%SZ")
+    return dt.replace(tzinfo=datetime.timezone.utc).timestamp()

@@ -4,6 +4,7 @@ st.set_page_config(page_title="Control STC 3.0", layout="wide")
 
 import pandas as pd
 import plotly.express as px
+import time
 from analitica import (
             cargar_matriz_documental_con_filas, datos_grafica_documentos,
             tabla_editable_documentos, es_valor_verdadero, COLUMNAS_REQUISITOS,
@@ -93,6 +94,8 @@ with col_menu:
                             with st.spinner(f"Ejecutando {wh['etiqueta']}..."):
                                 if "repo" in wh:
                                     exito, mensaje = disparar_workflow(wh["repo"], wh["workflow_file"])
+                                    if exito:
+                                        st.session_state[f"seguimiento_{wh['id']}"] = time.time()
                                 else:
                                     exito, mensaje = disparar_webhook(
                                         wh["url_env"], wh["header_nombre_env"], wh["header_valor_env"]
@@ -107,6 +110,31 @@ with col_menu:
                         st.session_state[key_confirmar] = False
                         st.rerun()
             st.markdown("<div style='margin-bottom:4px;'></div>", unsafe_allow_html=True)
+
+            key_seguimiento = f"seguimiento_{wh['id']}"
+            if st.session_state.get(key_seguimiento):
+                from github_actions import obtener_ultima_ejecucion
+                intentos_key = f"intentos_{wh['id']}"
+                st.session_state.setdefault(intentos_key, 0)
+
+                resultado_run = obtener_ultima_ejecucion(wh["repo"], wh["workflow_file"], st.session_state[key_seguimiento])
+
+                if resultado_run.get("encontrada") and resultado_run["status"] == "completed":
+                    if resultado_run["conclusion"] == "success":
+                        st.success(f"✅ '{wh['etiqueta']}' terminó exitosamente. [Ver detalle]({resultado_run['url']})")
+                    else:
+                        st.error(f"❌ '{wh['etiqueta']}' falló ({resultado_run['conclusion']}). [Ver detalle]({resultado_run['url']})")
+                    del st.session_state[key_seguimiento]
+                    st.session_state[intentos_key] = 0
+                elif st.session_state[intentos_key] >= 20:
+                    st.warning(f"No se pudo confirmar el resultado tras varios intentos. Revisa manualmente en GitHub: https://github.com/{wh['repo']}/actions")
+                    del st.session_state[key_seguimiento]
+                    st.session_state[intentos_key] = 0
+                else:
+                    st.info(f"⏳ Ejecutando '{wh['etiqueta']}'... (verificando estado)")
+                    st.session_state[intentos_key] += 1
+                    time.sleep(3)
+                    st.rerun()
 
         st.markdown("**Reporte por correo**")
         st.caption("Ve al tab Overview para enviar el reporte con el detalle completo.")
