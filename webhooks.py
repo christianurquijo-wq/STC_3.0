@@ -68,6 +68,7 @@ WEBHOOKS_REGISTRADOS = [
         "etiqueta": "🔄 Actualizar STC",
         "repo": "SGC140/Control_periodizacion_unificacion_DATA",
         "workflow_file": "stc_update.yaml",
+        "token_env": "GITHUB_TOKEN2",
         "confirmar": True,
         "mensaje_confirmacion": "¿Confirmas ejecutar la actualización de STC?",
     },

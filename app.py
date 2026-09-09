@@ -73,7 +73,7 @@ with col_menu:
                     else:
                         with st.spinner(f"Ejecutando {wh['etiqueta']}..."):
                             if "repo" in wh:
-                                exito, mensaje = disparar_workflow(wh["repo"], wh["workflow_file"])
+                                exito, mensaje = disparar_workflow(wh["repo"], wh["workflow_file"], token_env=wh.get("token_env", "GITHUB_TOKEN"))
                             else:
                                 exito, mensaje = disparar_webhook(
                                     wh["url_env"], wh["header_nombre_env"], wh["header_valor_env"]
@@ -117,7 +117,7 @@ with col_menu:
                 intentos_key = f"intentos_{wh['id']}"
                 st.session_state.setdefault(intentos_key, 0)
 
-                resultado_run = obtener_ultima_ejecucion(wh["repo"], wh["workflow_file"], st.session_state[key_seguimiento])
+                resultado_run = obtener_ultima_ejecucion(wh["repo"], wh["workflow_file"], st.session_state[key_seguimiento], token_env=wh.get("token_env", "GITHUB_TOKEN"))
 
                 if resultado_run.get("encontrada") and resultado_run["status"] == "completed":
                     if resultado_run["conclusion"] == "success":

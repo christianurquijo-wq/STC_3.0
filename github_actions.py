@@ -6,18 +6,17 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-def _obtener_token():
+def _obtener_token(token_env: str = "GITHUB_TOKEN"):
     try:
-        return st.secrets["GITHUB_TOKEN"]
+        return st.secrets[token_env]
     except Exception:
-        return os.getenv("GITHUB_TOKEN")
+        return os.getenv(token_env)
 
 
-def disparar_workflow(repo: str, workflow_file: str, rama: str = "main") -> tuple:
-    """Dispara un GitHub Action vía workflow_dispatch. Retorna (exito, mensaje)."""
-    token = _obtener_token()
+def disparar_workflow(repo: str, workflow_file: str, rama: str = "main", token_env: str = "GITHUB_TOKEN") -> tuple:
+    token = _obtener_token(token_env)
     if not token:
-        return False, "Falta configurar GITHUB_TOKEN en las variables de entorno/secrets."
+        return False, f"Falta configurar {token_env} en las variables de entorno/secrets."
 
     url = f"https://api.github.com/repos/{repo}/actions/workflows/{workflow_file}/dispatches"
     headers = {
@@ -36,16 +35,15 @@ def disparar_workflow(repo: str, workflow_file: str, rama: str = "main") -> tupl
 
 import time as _time
 
-def _headers():
-    token = _obtener_token()
+def _headers(token_env: str = "GITHUB_TOKEN"):
+    token = _obtener_token(token_env)
     return {"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"}
 
 
-def obtener_ultima_ejecucion(repo: str, workflow_file: str, disparado_despues: float) -> dict:
-    """Busca la ejecución más reciente del workflow creada después del timestamp dado."""
+def obtener_ultima_ejecucion(repo: str, workflow_file: str, disparado_despues: float, token_env: str = "GITHUB_TOKEN") -> dict:
     url = f"https://api.github.com/repos/{repo}/actions/workflows/{workflow_file}/runs"
     try:
-        resp = requests.get(url, headers=_headers(), params={"per_page": 5}, timeout=15)
+        resp = requests.get(url, headers=_headers(token_env), params={"per_page": 5}, timeout=15)
         if resp.status_code != 200:
             return {"encontrada": False, "error": f"Código {resp.status_code}"}
         runs = resp.json().get("workflow_runs", [])
