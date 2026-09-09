@@ -63,6 +63,14 @@ WEBHOOKS_REGISTRADOS = [
         "confirmar": True,
         "mensaje_confirmacion": "¿Confirmas disparar el flujo de Reporte CRM?",
     },
+    {
+        "id": "stc_update",
+        "etiqueta": "🔄 Actualizar STC",
+        "repo": "SGC140/STC_3_0_EFE",
+        "workflow_file": "stc_update.yaml",
+        "confirmar": True,
+        "mensaje_confirmacion": "¿Confirmas ejecutar la actualización de STC?",
+    },
 ]
 GITHUB_ACTIONS_REGISTRADOS = [
     {
@@ -72,13 +80,5 @@ GITHUB_ACTIONS_REGISTRADOS = [
         "workflow_file": "pantallazos_paquetes.yaml",
         "confirmar": True,
         "mensaje_confirmacion": "¿Confirmas ejecutar el proceso de vinculación de pantallazos y creación de paquetes?",
-    },
-    {
-        "id": "stc_update",
-        "etiqueta": "🔄 Actualizar STC",
-        "repo": "SGC140/STC_3_0_EFE",
-        "workflow_file": "stc_update.yaml",
-        "confirmar": True,
-        "mensaje_confirmacion": "¿Confirmas ejecutar la actualización de STC?",
     },
 ]
