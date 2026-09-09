@@ -66,7 +66,7 @@ WEBHOOKS_REGISTRADOS = [
     {
         "id": "stc_update",
         "etiqueta": "🔄 Actualizar STC",
-        "repo": "SGC140/STC_3_0_EFE",
+        "repo": "SGC140/Control_periodizacion_unificacion_DATA",
         "workflow_file": "stc_update.yaml",
         "confirmar": True,
         "mensaje_confirmacion": "¿Confirmas ejecutar la actualización de STC?",
