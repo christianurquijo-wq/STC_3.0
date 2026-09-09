@@ -73,4 +73,12 @@ GITHUB_ACTIONS_REGISTRADOS = [
         "confirmar": True,
         "mensaje_confirmacion": "¿Confirmas ejecutar el proceso de vinculación de pantallazos y creación de paquetes?",
     },
+    {
+        "id": "stc_update",
+        "etiqueta": "🔄 Actualizar STC",
+        "repo": "SGC140/STC_3_0_EFE",
+        "workflow_file": "stc_update.yaml",
+        "confirmar": True,
+        "mensaje_confirmacion": "¿Confirmas ejecutar la actualización de STC?",
+    },
 ]
