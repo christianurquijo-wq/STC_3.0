@@ -57,6 +57,7 @@ with col_menu:
         st.markdown("**Webhooks**")
 
         from webhooks import disparar_webhook, WEBHOOKS_REGISTRADOS, validar_clave
+        from github_actions import disparar_workflow
 
         for wh in WEBHOOKS_REGISTRADOS:
             key_confirmar = f"confirmar_{wh['id']}"
@@ -70,9 +71,12 @@ with col_menu:
                         # st.rerun()
                     else:
                         with st.spinner(f"Ejecutando {wh['etiqueta']}..."):
-                            exito, mensaje = disparar_webhook(
-                                wh["url_env"], wh["header_nombre_env"], wh["header_valor_env"]
-                            )
+                            if "repo" in wh:
+                                exito, mensaje = disparar_workflow(wh["repo"], wh["workflow_file"])
+                            else:
+                                exito, mensaje = disparar_webhook(
+                                    wh["url_env"], wh["header_nombre_env"], wh["header_valor_env"]
+                                )
                         if exito:
                             st.success(mensaje)
                         else:
@@ -87,9 +91,12 @@ with col_menu:
                             st.error("Contraseña incorrecta.")
                         else:
                             with st.spinner(f"Ejecutando {wh['etiqueta']}..."):
-                                exito, mensaje = disparar_webhook(
-                                    wh["url_env"], wh["header_nombre_env"], wh["header_valor_env"]
-                                )
+                                if "repo" in wh:
+                                    exito, mensaje = disparar_workflow(wh["repo"], wh["workflow_file"])
+                                else:
+                                    exito, mensaje = disparar_webhook(
+                                        wh["url_env"], wh["header_nombre_env"], wh["header_valor_env"]
+                                    )
                             st.session_state[key_confirmar] = False
                             if exito:
                                 st.success(mensaje)
